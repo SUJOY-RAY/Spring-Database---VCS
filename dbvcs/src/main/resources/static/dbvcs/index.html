@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dbvcs — DB Schema Explorer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ── Top bar ───────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-brand">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <ellipse cx="12" cy="5" rx="9" ry="3"/>
+          <path d="M3 5v6c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+          <path d="M3 11v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6"/>
+        </svg>
+        <span>dbvcs</span>
+      </div>
+      <nav class="topbar-tabs">
+        <button class="tab-btn active" data-tab="wiki">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Wiki
+        </button>
+        <button class="tab-btn" data-tab="diagram">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="17.5" y1="10" x2="17.5" y2="14"/><line x1="6.5" y1="10" x2="17.5" y2="10"/><line x1="6.5" y1="10" x2="6.5" y2="14"/></svg>
+          Diagram
+        </button>
+        <button class="tab-btn" data-tab="changelog">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          Changelog
+        </button>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="version-badge">
+        <label for="version-select">Version</label>
+        <select id="version-select"></select>
+      </div>
+      <span id="snapshot-date" class="snapshot-date"></span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- ── Sidebar ──────────────────────────────────────────── -->
+    <aside class="sidebar">
+      <div class="sidebar-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="sidebar-search" type="text" placeholder="Search for tables, fields, notes…" />
+      </div>
+      <div class="sidebar-group-bar">
+        <button id="btn-group-schema" class="group-toggle active">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          Group by: Schema
+        </button>
+        <button id="btn-clear-search" class="icon-btn" title="Clear search">✕</button>
+        <button id="btn-sort" class="icon-btn" title="Sort">⇅</button>
+      </div>
+      <div id="entity-tree" class="entity-tree"></div>
+    </aside>
+
+    <!-- ── Main content ─────────────────────────────────────── -->
+    <main class="main">
+      <!-- Wiki tab -->
+      <div id="tab-wiki" class="tab-content active">
+        <div id="wiki-content" class="wiki-content">
+          <div class="wiki-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            <p>Select a table from the sidebar to view its documentation</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Diagram tab -->
+      <div id="tab-diagram" class="tab-content">
+        <div id="canvas-wrapper">
+          <div id="canvas-controls">
+            <button id="btn-fit" title="Fit all">⊡ Fit</button>
+            <button id="btn-reset" title="Reset zoom">↺ Reset</button>
+          </div>
+          <svg id="canvas" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arrow-end" markerWidth="5" markerHeight="4"
+                      refX="5" refY="2" orient="auto">
+                <polygon points="0 0, 5 2, 0 4" fill="#a0a8c0"/>
+              </marker>
+              <marker id="arrow-blue" markerWidth="5" markerHeight="4"
+                      refX="5" refY="2" orient="auto">
+                <polygon points="0 0, 5 2, 0 4" fill="#5b6ef5"/>
+              </marker>
+              <marker id="arrow-purple" markerWidth="5" markerHeight="4"
+                      refX="5" refY="2" orient="auto">
+                <polygon points="0 0, 5 2, 0 4" fill="#8b5cf6"/>
+              </marker>
+              <marker id="arrow-green" markerWidth="5" markerHeight="4"
+                      refX="5" refY="2" orient="auto">
+                <polygon points="0 0, 5 2, 0 4" fill="#22c55e"/>
+              </marker>
+              <marker id="arrow-amber" markerWidth="5" markerHeight="4"
+                      refX="5" refY="2" orient="auto">
+                <polygon points="0 0, 5 2, 0 4" fill="#f59e0b"/>
+              </marker>
+            </defs>
+            <g id="canvas-root"></g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Changelog tab -->
+      <div id="tab-changelog" class="tab-content">
+        <div class="changelog-content" id="changelog-content">
+          <div class="wiki-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+            <p>No changelog data available</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ── Field tooltip ────────────────────────────────────── -->
+  <div id="field-tooltip" class="field-tooltip hidden">
+    <div class="tooltip-field-name" id="tooltip-field-name"></div>
+    <div class="tooltip-field-type" id="tooltip-field-type"></div>
+    <div class="tooltip-field-desc" id="tooltip-field-desc"></div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
