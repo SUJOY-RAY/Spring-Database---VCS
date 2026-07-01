@@ -18,6 +18,9 @@ public class Product {
     @Column(nullable = false, length = 200)
     private String name;
 
+    @Column(nullable = false, length = 200)
+    private String uniqueID;
+
     @DbvcsComment("Long-form marketing description shown on the product detail page; supports plain text.")
     @Column(length = 2000)
     private String description;

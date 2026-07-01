@@ -38,11 +38,8 @@ const tooltipFieldDesc = document.getElementById('tooltip-field-desc');
   if (latest) await loadVersion(parseInt(latest, 10));
   // Pre-load changelog so Recent Activities in wiki tab is populated
   await loadChangelog();
-  // Re-render wiki page if one is already open so activity rows appear
-  if (activeTable) {
-    const entity = schema && schema.entities.find(e => e.simpleClassName === activeTable);
-    if (entity) renderWikiPage(entity);
-  }
+  // Show system wiki on landing
+  renderSystemWiki();
 })();
 
 // ── Version loading ───────────────────────────────────────
@@ -74,10 +71,15 @@ async function loadVersion(version) {
     schema = await res.json();
     positions = {};
     activeTable = null;
+    // Reset context chip
+    const ctx = document.getElementById('inner-tabbar-context');
+    if (ctx) ctx.innerHTML = '';
     renderSidebar();
     autoLayout();
-    renderCanvas();
-    renderChangelog();
+    // Re-render active inner tab at system level
+    const activeInner = document.querySelector('.inner-tab-btn.active')?.dataset.innerTab || 'wiki';
+    if (activeInner === 'wiki') renderSystemWiki();
+    else if (activeInner === 'diagram') renderCanvas();
     snapshotDate.textContent = schema.capturedAt
       ? new Date(schema.capturedAt).toLocaleString()
       : '';
@@ -105,19 +107,37 @@ async function loadVersion(version) {
 })();
 
 
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-    // Load full changelog when tab is opened
-    if (btn.dataset.tab === 'changelog') {
-      if (changelogData) renderChangelog();
-      else loadChangelog();
-    }
+// ── Inner tab switching ───────────────────────────────────
+function switchInnerTab(name) {
+  document.querySelectorAll('.inner-tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.innerTab === name);
   });
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+
+  if (name === 'diagram') {
+    if (activeTable) renderTableDiagram(activeTable);
+    else { autoLayout(); renderCanvas(); }
+  }
+  if (name === 'changelog') {
+    if (changelogData) renderChangelog();
+    else loadChangelog();
+  }
+  if (name === 'wiki') {
+    if (activeTable) {
+      const entity = schema && schema.entities.find(e => e.simpleClassName === activeTable);
+      if (entity) renderWikiPage(entity);
+    } else {
+      renderSystemWiki();
+    }
+  }
+}
+
+document.querySelectorAll('.inner-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchInnerTab(btn.dataset.innerTab));
 });
+
+// Remove the old .tab-btn handler (topbar nav is now empty)
 
 // ── Sidebar search ────────────────────────────────────────
 sidebarSearch.addEventListener('input', () => {
@@ -306,16 +326,29 @@ function generateFieldDesc(field) {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
-// ── Table selection & wiki page ───────────────────────────
+// ── Table selection ───────────────────────────────────────
 function selectTable(name) {
   activeTable = name;
   const entity = schema.entities.find(e => e.simpleClassName === name);
   if (!entity) return;
-  renderWikiPage(entity);
 
-  // Switch to wiki tab if not already there
-  const wikiBtn = document.querySelector('.tab-btn[data-tab="wiki"]');
-  if (!wikiBtn.classList.contains('active')) wikiBtn.click();
+  // Update context chip in the inner tabbar
+  const ctx = document.getElementById('inner-tabbar-context');
+  if (ctx) {
+    ctx.innerHTML = `
+      <span class="itb-sep">/</span>
+      <span class="itb-chip">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        ${entity.tableName}
+        <button class="itb-clear" onclick="clearSelection()" title="Back to system view">✕</button>
+      </span>`;
+  }
+
+  // Re-render whichever inner tab is currently active
+  const activeInner = document.querySelector('.inner-tab-btn.active')?.dataset.innerTab || 'wiki';
+  if (activeInner === 'wiki') renderWikiPage(entity);
+  else if (activeInner === 'diagram') renderTableDiagram(name);
+  else if (activeInner === 'changelog') renderTableChangelog(entity);
 }
 
 function renderWikiPage(entity) {
@@ -414,10 +447,17 @@ function renderWikiPage(entity) {
 
 function clearSelection() {
   activeTable = null;
-  wikiContent.innerHTML = `<div class="wiki-empty">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-    <p>Select a table from the sidebar to view its documentation</p>
-  </div>`;
+  // Clear sidebar highlight
+  document.querySelectorAll('.table-item').forEach(i => i.classList.remove('open'));
+  document.querySelectorAll('.table-item-header').forEach(h => h.classList.remove('active'));
+  // Clear context chip
+  const ctx = document.getElementById('inner-tabbar-context');
+  if (ctx) ctx.innerHTML = '';
+  // Re-render active inner tab at system level
+  const activeInner = document.querySelector('.inner-tab-btn.active')?.dataset.innerTab || 'wiki';
+  if (activeInner === 'wiki') renderSystemWiki();
+  else if (activeInner === 'diagram') { autoLayout(); renderCanvas(); }
+  else if (activeInner === 'changelog') renderChangelog();
 }
 
 function toggleFieldsTable(headerEl) {
@@ -619,7 +659,244 @@ function buildActivitySection(entity) {
   </div>`;
 }
 
-// ── Mini ER diagram (table references section) ─────────────
+// ── System-level Wiki (no table selected) ─────────────────
+function renderSystemWiki() {
+  if (!schema) return;
+  const entities = schema.entities || [];
+  const totalFields    = entities.reduce((s, e) => s + (e.fields    || []).length, 0);
+  const totalRelations = entities.reduce((s, e) => s + (e.relations || []).length, 0);
+
+  // Build group map
+  const groups = {};
+  entities.forEach(e => {
+    const g = deriveGroup(e);
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(e);
+  });
+
+  let html = '';
+
+  // Header
+  html += `<div class="wiki-page-header">
+    <div class="wiki-page-title">
+      <div class="wiki-table-icon" style="background:var(--teal)">S</div>
+      <h1>Schema Overview</h1>
+    </div>
+    <div class="wiki-page-meta">
+      <div class="wiki-meta-item">
+        <div class="wiki-meta-dot"></div>
+        <span>Version ${schema.version}</span>
+      </div>
+      <div class="wiki-meta-item"><span>${entities.length} tables</span></div>
+      <div class="wiki-meta-item"><span>${totalFields} fields</span></div>
+      <div class="wiki-meta-item"><span>${totalRelations} relations</span></div>
+    </div>
+  </div>`;
+
+  // Description
+  html += `<div class="wiki-section">
+    <h2>Database Schema</h2>
+    <p>This schema contains <strong>${entities.length}</strong> entities across <strong>${Object.keys(groups).length}</strong> domain groups, with a total of <strong>${totalFields}</strong> fields and <strong>${totalRelations}</strong> relationships. Select a table from the sidebar to view detailed documentation.</p>
+  </div>`;
+
+  // Domain groups
+  html += `<div class="wiki-section">
+    <h3>Domain Groups</h3>
+    <div class="sys-groups-grid">`;
+  Object.entries(groups).sort(([a],[b]) => a.localeCompare(b)).forEach(([groupName, ents]) => {
+    const [hdrCol] = groupColor(groupName);
+    html += `<div class="sys-group-card" style="--g-color:${hdrCol}">
+      <div class="sys-group-header">${groupName}</div>
+      <div class="sys-group-tables">
+        ${ents.map(e => `<div class="sys-group-table-row" onclick="selectTable('${e.simpleClassName}')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          <span>${e.tableName}</span>
+          <span class="sys-field-count">${(e.fields||[]).length}f</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  });
+  html += `</div></div>`;
+
+  // All tables flat list
+  html += `<div class="wiki-section">
+    <h3>All Tables (${entities.length})</h3>
+    <table class="wiki-table">
+      <thead><tr>
+        <th>Table</th><th>Class</th><th>Fields</th><th>Relations</th><th>Description</th>
+      </tr></thead>
+      <tbody>
+        ${entities.map(e => `<tr onclick="selectTable('${e.simpleClassName}')" style="cursor:pointer">
+          <td><div class="col-name">
+            <div class="col-icon" style="background:var(--accent-light);color:var(--accent);border-color:rgba(91,110,245,0.2)">T</div>
+            <span>${e.tableName}</span>
+          </div></td>
+          <td style="color:var(--text-muted);font-size:12px">${e.simpleClassName}</td>
+          <td style="color:var(--text-muted)">${(e.fields||[]).length}</td>
+          <td style="color:var(--text-muted)">${(e.relations||[]).length}</td>
+          <td style="color:var(--text-muted);font-size:12px">${e.comment ? escapeHtml(e.comment.substring(0,80)) + (e.comment.length>80?'…':'') : '—'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+
+  wikiContent.innerHTML = html;
+
+  // Wire up table row clicks re-bound via JS for safety (inline onclick already set)
+}
+
+// ── Table-scoped Diagram ──────────────────────────────────
+function renderTableDiagram(name) {
+  const entity = schema && schema.entities.find(e => e.simpleClassName === name);
+  canvasRoot.innerHTML = '';
+  _lineCounter = 0;
+  if (!entity) return;
+
+  // Highlight: show only this entity + its direct neighbours
+  const neighbours = new Set([name]);
+  (entity.relations || []).forEach(r => neighbours.add(r.targetEntity));
+  schema.entities.forEach(e => {
+    (e.relations || []).forEach(r => {
+      if (r.targetEntity === name) neighbours.add(e.simpleClassName);
+    });
+  });
+
+  const subEntities = schema.entities.filter(e => neighbours.has(e.simpleClassName));
+
+  // Lay out: focal entity centred, neighbours arranged around it
+  const CW = CARD_W, CH = (e) => cardHeight(e);
+  const cx = 300, cy = 200;
+  positions[name] = { x: cx, y: cy };
+
+  const others = subEntities.filter(e => e.simpleClassName !== name);
+  const angleStep = (2 * Math.PI) / Math.max(others.length, 1);
+  const radius = Math.max(260, others.length * 60);
+  others.forEach((e, i) => {
+    const angle = i * angleStep - Math.PI / 2;
+    positions[e.simpleClassName] = {
+      x: cx + radius * Math.cos(angle),
+      y: cy + radius * Math.sin(angle)
+    };
+  });
+
+  // Draw relation lines
+  const linesGroup = svgMake('g', { class: 'lines-layer' });
+  subEntities.forEach(e => {
+    (e.relations || []).forEach(rel => {
+      if (neighbours.has(rel.targetEntity)) drawRelationLine(linesGroup, e, rel);
+    });
+  });
+  canvasRoot.appendChild(linesGroup);
+
+  // Draw cards — focal entity highlighted
+  subEntities.forEach(e => {
+    const card = drawEntityCard(e);
+    if (e.simpleClassName === name) {
+      // Add a highlight ring
+      const pos = positions[e.simpleClassName];
+      const h   = cardHeight(e);
+      const ring = svgMake('rect', {
+        x: pos.x - 3, y: pos.y - 3,
+        width: CW + 6, height: h + 6,
+        rx: 8, fill: 'none',
+        stroke: 'var(--accent)', 'stroke-width': 2.5, opacity: 0.5
+      });
+      canvasRoot.insertBefore(ring, canvasRoot.firstChild);
+    }
+    canvasRoot.appendChild(card);
+  });
+
+  applyTransform();
+  setTimeout(fitAll, 60);
+}
+
+// ── Table-scoped Changelog ────────────────────────────────
+function renderTableChangelog(entity) {
+  changelogContent.innerHTML = '';
+
+  if (!changelogData || changelogData.length === 0) {
+    changelogContent.innerHTML = `<div class="wiki-empty"><p>No changelog data available</p></div>`;
+    return;
+  }
+
+  // Filter to entries that touched this entity
+  const relevant = [];
+  changelogData.forEach(entry => {
+    const diff = entry.diff || {};
+    const allGroups = [
+      { list: diff.added    || [], status: 'added'    },
+      { list: diff.modified || [], status: 'modified' },
+      { list: diff.removed  || [], status: 'removed'  }
+    ];
+    allGroups.forEach(({ list, status }) => {
+      const match = list.find(e => e.simpleClassName === entity.simpleClassName);
+      if (match) relevant.push({ entry, match, status });
+    });
+  });
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'cl-header';
+  header.innerHTML = `
+    <h2 class="cl-title">Changelog — <code style="font-size:16px;font-weight:600">${entity.tableName}</code></h2>
+    <span style="font-size:12px;color:var(--text-muted)">${relevant.length} version${relevant.length!==1?'s':''} with changes</span>`;
+  changelogContent.appendChild(header);
+
+  if (relevant.length === 0) {
+    changelogContent.innerHTML += `<div class="wiki-empty" style="min-height:120px"><p>No recorded changes for this table</p></div>`;
+    return;
+  }
+
+  relevant.forEach(({ entry, match, status }) => {
+    const card = document.createElement('div');
+    card.className = 'cl-card';
+
+    const { displayName, initials } = parseAuthor(entry.capturedBy);
+    const timeAgo    = formatTimeAgo(entry.capturedAt);
+    const statusLabel = status === 'added' ? 'Table Created' : status === 'removed' ? 'Table Removed' : 'Table Modified';
+    const statusColor = status === 'added' ? 'var(--success)' : status === 'removed' ? 'var(--danger)' : 'var(--warning)';
+
+    const fieldChanges    = match.fieldChanges    || [];
+    const relationChanges = match.relationChanges || [];
+    const allChanges      = [...fieldChanges, ...relationChanges];
+
+    card.innerHTML = `
+      <div class="cl-card-head">
+        <div class="cl-card-title">
+          <span class="cl-commit-title">${statusLabel}</span>
+          <span class="cl-version-num">#${entry.version}</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:20px;background:${statusColor}22;color:${statusColor};font-weight:600">${status}</span>
+        </div>
+        <div class="cl-card-actions">
+          <button class="cl-btn-view" onclick="viewVersion(${entry.version})">View changes</button>
+        </div>
+      </div>
+      <div class="cl-author-line">
+        <div class="cl-avatar">${initials}</div>
+        <span class="cl-author-name">${displayName}</span>
+        <span class="cl-author-action">authored ${timeAgo}</span>
+      </div>
+      ${allChanges.length > 0 ? `
+        <div class="cl-changes-box" style="margin-top:8px">
+          <div class="cl-changes-label">${allChanges.length} Change${allChanges.length!==1?'s':''}</div>
+          <div class="cl-entity-list" style="padding-top:18px">
+            ${allChanges.map(c => {
+              const isAdd = c.startsWith('+'), isRem = c.startsWith('-'), isMod = c.startsWith('~');
+              const color = isAdd ? 'var(--success)' : isRem ? 'var(--danger)' : 'var(--warning)';
+              const icon  = isAdd ? '+' : isRem ? '−' : '~';
+              return `<div class="cl-entity-item" style="cursor:default">
+                <span style="color:${color};font-weight:700;width:16px;text-align:center">${icon}</span>
+                <code style="font-size:11px;color:var(--text-muted)">${escapeHtml(c.slice(2))}</code>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>` : ''}
+    `;
+    changelogContent.appendChild(card);
+  });
+}
+
+
 // Layout: main card on the left, related cards stacked on the right.
 // Connector lines run from the right edge of the main card to the
 // left edge of each related card.
@@ -890,7 +1167,7 @@ function renderChangelog() {
   // Header bar
   const header = document.createElement('div');
   header.className = 'cl-header';
-  header.innerHTML = `<h2 class="cl-title">Changelog</h2>`;
+  header.innerHTML = `<h2 class="cl-title">Changelog — All Tables</h2>`;
   changelogContent.appendChild(header);
 
   changelogData.forEach((entry, idx) => {
@@ -1108,9 +1385,9 @@ function escapeHtml(str) {
 
 function viewVersion(version) {
   versionSelect.value = version;
-  loadVersion(version);
-  // Switch to wiki tab
-  document.querySelector('.tab-btn[data-tab="wiki"]').click();
+  loadVersion(version).then(() => {
+    switchInnerTab('wiki');
+  });
 }
 
 // ── Diagram (full ER) ─────────────────────────────────────
