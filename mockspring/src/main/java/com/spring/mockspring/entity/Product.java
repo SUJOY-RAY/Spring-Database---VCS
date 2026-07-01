@@ -1,5 +1,6 @@
 package com.spring.mockspring.entity;
 
+import com.dbvcs.annotation.DbvcsComment;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -7,6 +8,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "products")
+@DbvcsComment("Catalogue of all products available for purchase, including pricing, stock level, and availability flag.")
 public class Product {
 
     @Id
@@ -16,15 +18,18 @@ public class Product {
     @Column(nullable = false, length = 200)
     private String name;
 
+    @DbvcsComment("Long-form marketing description shown on the product detail page; supports plain text.")
     @Column(length = 2000)
     private String description;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
+    @DbvcsComment("Current units in stock. Decremented on order placement; incremented on restock.")
     @Column(nullable = false)
     private Integer stockQuantity = 0;
 
+    @DbvcsComment("False hides the product from the storefront without deleting it.")
     @Column(nullable = false)
     private boolean available = true;
 

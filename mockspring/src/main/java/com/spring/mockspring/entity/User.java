@@ -1,11 +1,13 @@
 package com.spring.mockspring.entity;
 
+import com.dbvcs.annotation.DbvcsComment;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
 @Table(name = "users")
+@DbvcsComment("Registered user accounts including authentication credentials, personal details, and account status.")
 public class User {
 
     @Id

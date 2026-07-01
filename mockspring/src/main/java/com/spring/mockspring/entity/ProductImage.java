@@ -1,10 +1,12 @@
 package com.spring.mockspring.entity;
 
+import com.dbvcs.annotation.DbvcsComment;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "product_image")
+@DbvcsComment("Holds image URLs and metadata for product photos, supporting multiple images per product with sort order and a primary flag.")
 public class ProductImage {
 
     @Id

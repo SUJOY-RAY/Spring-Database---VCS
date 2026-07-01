@@ -10,6 +10,7 @@ public class EntitySchema {
     private String className;
     private String simpleClassName;
     private String tableName;
+    private String comment;
     private List<FieldSchema> fields;
     private List<RelationSchema> relations;
 
@@ -24,6 +25,16 @@ public class EntitySchema {
         this.relations = relations;
     }
 
+    public EntitySchema(String className, String simpleClassName, String tableName,
+                        String comment, List<FieldSchema> fields, List<RelationSchema> relations) {
+        this.className = className;
+        this.simpleClassName = simpleClassName;
+        this.tableName = tableName;
+        this.comment = comment;
+        this.fields = fields;
+        this.relations = relations;
+    }
+
     public String getClassName() { return className; }
     public void setClassName(String className) { this.className = className; }
 
@@ -32,6 +43,9 @@ public class EntitySchema {
 
     public String getTableName() { return tableName; }
     public void setTableName(String tableName) { this.tableName = tableName; }
+
+    public String getComment() { return comment; }
+    public void setComment(String comment) { this.comment = comment; }
 
     public List<FieldSchema> getFields() { return fields; }
     public void setFields(List<FieldSchema> fields) { this.fields = fields; }

@@ -36,6 +36,13 @@ const tooltipFieldDesc = document.getElementById('tooltip-field-desc');
   await loadVersionList();
   const latest = versionSelect.value;
   if (latest) await loadVersion(parseInt(latest, 10));
+  // Pre-load changelog so Recent Activities in wiki tab is populated
+  await loadChangelog();
+  // Re-render wiki page if one is already open so activity rows appear
+  if (activeTable) {
+    const entity = schema && schema.entities.find(e => e.simpleClassName === activeTable);
+    if (entity) renderWikiPage(entity);
+  }
 })();
 
 // ── Version loading ───────────────────────────────────────
@@ -79,13 +86,36 @@ async function loadVersion(version) {
   }
 }
 
-// ── Tab switching ─────────────────────────────────────────
+// ── Sidebar collapse / expand ─────────────────────────────
+(function () {
+  const sidebar       = document.getElementById('sidebar');
+  const btnCollapse   = document.getElementById('btn-sidebar-toggle');
+  const btnExpand     = sidebar.querySelector('.sidebar-expand-btn');
+
+  function collapse() {
+    sidebar.classList.add('collapsed');
+  }
+
+  function expand() {
+    sidebar.classList.remove('collapsed');
+  }
+
+  btnCollapse.addEventListener('click', collapse);
+  btnExpand.addEventListener('click', expand);
+})();
+
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+    // Load full changelog when tab is opened
+    if (btn.dataset.tab === 'changelog') {
+      if (changelogData) renderChangelog();
+      else loadChangelog();
+    }
   });
 });
 
@@ -249,7 +279,7 @@ function getTypeAbbr(javaType) {
 function showFieldTooltip(ev, field) {
   tooltipFieldName.textContent = `Field ${field.name}`;
   tooltipFieldType.textContent = `Type ${field.javaType}`;
-  tooltipFieldDesc.textContent = generateFieldDesc(field);
+  tooltipFieldDesc.textContent = field.comment ? field.comment : generateFieldDesc(field);
   fieldTooltip.classList.remove('hidden');
   positionTooltip(ev);
 }
@@ -326,9 +356,13 @@ function renderWikiPage(entity) {
   </div>`;
 
   // Description
+  const tableDesc = entity.comment
+    ? entity.comment
+    : `Stores information about each ${entity.tableName.replace(/_/g, ' ').replace(/s$/, '')} record in the system.`;
+
   html += `<div class="wiki-section">
     <h2>${entity.simpleClassName} Table</h2>
-    <p>The <code class="col-code">${entity.tableName}</code> table stores ${generateTableDesc(entity)}.</p>
+    <p>${tableDesc}</p>
   </div>`;
 
   // Insert code example
@@ -444,7 +478,7 @@ function buildFieldsTable(entity) {
       <td><code class="col-code">${mapSqlType(f.javaType)}</code></td>
       <td>${tags}</td>
       <td>${refs}</td>
-      <td style="color:var(--text-muted);font-size:12px">${generateFieldDesc(f)}</td>
+      <td style="color:var(--text-muted);font-size:12px">${f.comment ? escapeHtml(f.comment) : generateFieldDesc(f)}</td>
       <td style="color:var(--text-muted);font-size:11px;white-space:nowrap">+ now</td>
     </tr>`;
   });
@@ -516,16 +550,71 @@ function mapSqlType(javaType) {
 }
 
 function buildActivitySection(entity) {
+  // Collect all changelog entries that touched this entity
+  const rows = [];
+
+  if (changelogData && changelogData.length > 0) {
+    changelogData.forEach(entry => {
+      const diff = entry.diff || {};
+      const allGroups = [
+        { list: diff.added    || [], status: 'added'    },
+        { list: diff.modified || [], status: 'modified' },
+        { list: diff.removed  || [], status: 'removed'  }
+      ];
+      allGroups.forEach(({ list, status }) => {
+        const match = list.find(e => e.simpleClassName === entity.simpleClassName);
+        if (!match) return;
+
+        const fieldChanges = match.fieldChanges || [];
+        const added   = fieldChanges.filter(c => c.startsWith('+')).length;
+        const deleted = fieldChanges.filter(c => c.startsWith('-')).length;
+
+        rows.push({ entry, status, added, deleted });
+      });
+    });
+  }
+
+  // Fallback: if changelog not loaded yet, show a single placeholder row
+  if (rows.length === 0) {
+    const { initials } = parseAuthor(schema && schema.capturedBy ? schema.capturedBy : '');
+    return `<div class="wiki-section">
+      <h3>Recent activities</h3>
+      <div class="activity-list">
+        <div class="activity-item">
+          <div class="activity-avatar">${initials || 'DB'}</div>
+          <span class="activity-time">${schema ? formatTimeAgo(schema.capturedAt) : 'just now'}</span>
+          <span class="activity-version">Version ${schema ? schema.version : 1}</span>
+          <span class="activity-badge add">+${(entity.fields||[]).length}</span>
+          <span class="activity-badge remove">-0</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  const rowsHtml = rows.map(({ entry, status, added, deleted }) => {
+    const { initials } = parseAuthor(entry.capturedBy || '');
+    const timeAgo = formatTimeAgo(entry.capturedAt);
+    const statusLabel = status === 'added' ? 'Created' : status === 'removed' ? 'Deleted' : 'Modified';
+
+    // For added: show total field count as +N; for removed: show -N
+    const addCount    = status === 'added'   ? (entity.fields || []).length : added;
+    const removeCount = status === 'removed' ? (entity.fields || []).length : deleted;
+
+    const addBadge    = addCount    > 0 ? `<span class="activity-badge add">+${addCount}</span>`    : '';
+    const removeBadge = removeCount > 0 ? `<span class="activity-badge remove">-${removeCount}</span>` : '';
+
+    return `<div class="activity-item">
+      <div class="activity-avatar">${initials || 'DB'}</div>
+      <span class="activity-time">${timeAgo}</span>
+      <span class="activity-version">v${entry.version} — ${statusLabel}</span>
+      ${addBadge}${removeBadge}
+    </div>`;
+  }).join('');
+
   return `<div class="wiki-section">
     <h3>Recent activities</h3>
     <div class="activity-list">
-      <div class="activity-item">
-        <div class="activity-avatar">DB</div>
-        <span class="activity-time">just now</span>
-        <span class="activity-version">Version ${schema ? schema.version : 1}</span>
-        <span class="activity-badge add">+${(entity.fields||[]).length}</span>
-        <span class="activity-badge remove">-0</span>
-      </div>
+      ${rowsHtml}
     </div>
   </div>`;
 }
@@ -765,38 +854,263 @@ function renderMiniDiagram(entity) {
 }
 
 // ── Changelog rendering ───────────────────────────────────
+// Changelog state
+let changelogData = null;
+let expandedDiffs = new Set(); // version numbers with expanded entity lists
+
+async function loadChangelog() {
+  try {
+    const res = await fetch(`${API}/changelog`);
+    if (!res.ok) throw new Error('failed');
+    changelogData = await res.json();
+    // Only render into the DOM if the changelog tab is currently visible
+    const tab = document.getElementById('tab-changelog');
+    if (tab && tab.classList.contains('active')) {
+      renderChangelog();
+    }
+  } catch (e) {
+    const tab = document.getElementById('tab-changelog');
+    if (tab && tab.classList.contains('active')) {
+      changelogContent.innerHTML = `<div class="wiki-empty"><p>Could not load changelog</p></div>`;
+    }
+  }
+}
+
 function renderChangelog() {
-  if (!schema) return;
   changelogContent.innerHTML = '';
 
-  const entry = document.createElement('div');
-  entry.className = 'changelog-entry';
+  if (!changelogData || changelogData.length === 0) {
+    changelogContent.innerHTML = `<div class="wiki-empty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+      <p>No changelog data available</p>
+    </div>`;
+    return;
+  }
 
-  const badge = document.createElement('div');
-  badge.className = 'changelog-version-badge';
-  badge.textContent = `v${schema.version}`;
-  entry.appendChild(badge);
+  // Header bar
+  const header = document.createElement('div');
+  header.className = 'cl-header';
+  header.innerHTML = `<h2 class="cl-title">Changelog</h2>`;
+  changelogContent.appendChild(header);
 
-  const body = document.createElement('div');
-  body.className = 'changelog-entry-body';
+  changelogData.forEach((entry, idx) => {
+    const diff = entry.diff || {};
+    const added    = diff.added    || [];
+    const removed  = diff.removed  || [];
+    const modified = diff.modified || [];
+    const isLatest = idx === 0;
+    const isFirst  = added.length > 0 && removed.length === 0 && modified.length === 0 && idx === changelogData.length - 1;
 
-  const date = document.createElement('div');
-  date.className = 'changelog-entry-date';
-  date.textContent = schema.capturedAt ? new Date(schema.capturedAt).toLocaleString() : 'Unknown';
-  body.appendChild(date);
+    const totalChanged = added.length + removed.length + modified.length;
+    const isExpanded   = expandedDiffs.has(entry.version);
 
-  (schema.entities || []).forEach(e => {
-    const change = document.createElement('div');
-    change.className = 'changelog-change';
-    change.innerHTML = `
-      <span class="changelog-dot added"></span>
-      <span>Table <strong>${e.tableName}</strong> — ${(e.fields||[]).length} fields, ${(e.relations||[]).length} relations</span>
+    // Build commit-style title
+    const commitTitle = buildCommitTitle(entry, diff, isLatest);
+
+    const card = document.createElement('div');
+    card.className = 'cl-card';
+
+    // ── Card header ──
+    const cardHead = document.createElement('div');
+    cardHead.className = 'cl-card-head';
+    cardHead.innerHTML = `
+      <div class="cl-card-title">
+        <span class="cl-commit-title">${commitTitle}</span>
+        <span class="cl-version-num">#${entry.version}</span>
+        ${isLatest ? '<span class="cl-latest-badge">Latest version</span>' : ''}
+      </div>
+      <div class="cl-card-actions">
+        <button class="cl-btn-browse" onclick="viewVersion(${entry.version})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Browse
+        </button>
+        <button class="cl-btn-view" onclick="viewVersion(${entry.version})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          View changes
+        </button>
+      </div>
     `;
-    body.appendChild(change);
-  });
+    card.appendChild(cardHead);
 
-  entry.appendChild(body);
-  changelogContent.appendChild(entry);
+    // ── Author line ──
+    const authorLine = document.createElement('div');
+    authorLine.className = 'cl-author-line';
+    const { displayName, initials } = parseAuthor(entry.capturedBy);
+    const timeAgo = formatTimeAgo(entry.capturedAt);
+    authorLine.innerHTML = `
+      <div class="cl-avatar">${initials}</div>
+      <span class="cl-author-name">${displayName}</span>
+      <span class="cl-author-action">authored ${timeAgo}</span>
+    `;
+    card.appendChild(authorLine);
+
+    // ── Diff summary badges ──
+    if (totalChanged > 0 || isFirst) {
+      const summary = document.createElement('div');
+      summary.className = 'cl-diff-summary';
+      if (added.length > 0) {
+        summary.innerHTML += `<span class="cl-badge cl-badge-added">+ ${added.length} Added</span>`;
+      }
+      if (removed.length > 0) {
+        summary.innerHTML += `<span class="cl-badge cl-badge-removed">- ${removed.length} Removed</span>`;
+      }
+      if (modified.length > 0) {
+        summary.innerHTML += `<span class="cl-badge cl-badge-modified">* ${modified.length} Modified</span>`;
+      }
+      const tableCount = added.length + removed.length + modified.length;
+      if (tableCount > 0) {
+        summary.innerHTML += `<span class="cl-badge cl-badge-tables">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          ${tableCount} Table${tableCount !== 1 ? 's' : ''}
+        </span>`;
+      }
+      card.appendChild(summary);
+    }
+
+    // ── Entities changed box ──
+    const allChanges = [
+      ...added.map(e => ({ ...e, _status: 'added' })),
+      ...removed.map(e => ({ ...e, _status: 'removed' })),
+      ...modified.map(e => ({ ...e, _status: 'modified' }))
+    ];
+
+    if (allChanges.length > 0) {
+      const changesBox = document.createElement('div');
+      changesBox.className = 'cl-changes-box';
+
+      const changesLabel = document.createElement('div');
+      changesLabel.className = 'cl-changes-label';
+      changesLabel.textContent = `${allChanges.length} ${allChanges.length === 1 ? 'Entity' : 'Entities'} Changed`;
+      changesBox.appendChild(changesLabel);
+
+      const showMax = 4;
+      const toShow  = isExpanded ? allChanges : allChanges.slice(0, showMax);
+
+      const list = document.createElement('div');
+      list.className = 'cl-entity-list';
+      toShow.forEach(e => {
+        const item = document.createElement('div');
+        item.className = `cl-entity-item cl-entity-${e._status}`;
+
+        const icon = e._status === 'added' ? '+' : e._status === 'removed' ? '−' : '∗';
+        const iconClass = `cl-entity-icon cl-icon-${e._status}`;
+
+        // Build sub-changes
+        const subChanges = [...(e.fieldChanges || []), ...(e.relationChanges || [])].slice(0, 3);
+        const subHtml = subChanges.length > 0
+          ? `<div class="cl-sub-changes">${subChanges.map(c => `<span class="cl-sub-change">${escapeHtml(c)}</span>`).join('')}</div>`
+          : '';
+
+        item.innerHTML = `
+          <span class="${iconClass}">${icon}</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="cl-table-icon"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          <span class="cl-entity-name">Table <strong>${escapeHtml(e.tableName)}</strong></span>
+          ${subHtml}
+        `;
+        item.addEventListener('click', () => {
+          // Switch to the right version then open the wiki page
+          if (schema && schema.version !== entry.version) {
+            versionSelect.value = entry.version;
+            loadVersion(entry.version).then(() => selectTable(e.simpleClassName));
+          } else {
+            selectTable(e.simpleClassName);
+          }
+        });
+        list.appendChild(item);
+      });
+      changesBox.appendChild(list);
+
+      if (allChanges.length > showMax) {
+        const more = document.createElement('button');
+        more.className = 'cl-show-more';
+        more.textContent = isExpanded
+          ? '↑ Show less'
+          : `↓ Show ${allChanges.length - showMax} more`;
+        more.addEventListener('click', () => {
+          if (isExpanded) expandedDiffs.delete(entry.version);
+          else expandedDiffs.add(entry.version);
+          renderChangelog();
+        });
+        changesBox.appendChild(more);
+      }
+
+      card.appendChild(changesBox);
+    }
+
+    changelogContent.appendChild(card);
+
+    // ── Between-version gap note ──
+    if (idx < changelogData.length - 1) {
+      const next = changelogData[idx + 1];
+      const skipped = entry.version - next.version - 1;
+      if (skipped > 0) {
+        const gap = document.createElement('div');
+        gap.className = 'cl-gap-note';
+        gap.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg> ${skipped} intermediate version${skipped !== 1 ? 's' : ''} skipped <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg>`;
+        changelogContent.appendChild(gap);
+      }
+    }
+  });
+}
+
+function buildCommitTitle(entry, diff, isLatest) {
+  const added    = (diff.added    || []).length;
+  const removed  = (diff.removed  || []).length;
+  const modified = (diff.modified || []).length;
+  if (entry.version === 1) return 'Initial schema snapshot';
+  if (added > 0 && removed === 0 && modified === 0) return `Add ${added} table${added !== 1 ? 's' : ''}`;
+  if (removed > 0 && added === 0 && modified === 0) return `Remove ${removed} table${removed !== 1 ? 's' : ''}`;
+  if (modified > 0 && added === 0 && removed === 0) return `Update ${modified} table${modified !== 1 ? 's' : ''}`;
+  const parts = [];
+  if (added)    parts.push(`+${added}`);
+  if (removed)  parts.push(`-${removed}`);
+  if (modified) parts.push(`~${modified}`);
+  return `Schema changes (${parts.join(', ')})`;
+}
+
+function parseAuthor(capturedBy) {
+  if (!capturedBy || capturedBy === 'unknown') {
+    return { displayName: 'Unknown', initials: '?' };
+  }
+  // "Name <email>" or just "Name"
+  const match = capturedBy.match(/^(.+?)\s*(?:<.+>)?$/);
+  const name  = match ? match[1].trim() : capturedBy;
+  const parts = name.split(/\s+/);
+  const initials = parts.length >= 2
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : name.substring(0, 2).toUpperCase();
+  return { displayName: name, initials };
+}
+
+function formatTimeAgo(isoString) {
+  if (!isoString) return 'unknown time ago';
+  const diff = Date.now() - new Date(isoString).getTime();
+  const s = Math.floor(diff / 1000);
+  if (s < 60)  return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60)  return `${m} minute${m !== 1 ? 's' : ''} ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24)  return `${h} hour${h !== 1 ? 's' : ''} ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30)  return `${d} day${d !== 1 ? 's' : ''} ago`;
+  const mo = Math.floor(d / 30);
+  if (mo < 12) return `${mo} month${mo !== 1 ? 's' : ''} ago`;
+  const yr = Math.floor(mo / 12);
+  return `${yr} year${yr !== 1 ? 's' : ''} ago`;
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function viewVersion(version) {
+  versionSelect.value = version;
+  loadVersion(version);
+  // Switch to wiki tab
+  document.querySelector('.tab-btn[data-tab="wiki"]').click();
 }
 
 // ── Diagram (full ER) ─────────────────────────────────────

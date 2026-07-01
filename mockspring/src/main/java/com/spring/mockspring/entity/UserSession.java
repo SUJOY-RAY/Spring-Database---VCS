@@ -1,10 +1,12 @@
 package com.spring.mockspring.entity;
 
+import com.dbvcs.annotation.DbvcsComment;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_session")
+@DbvcsComment("Tracks active and historical login sessions per user, storing the auth token, client IP, user-agent, and expiry time.")
 public class UserSession {
 
     @Id

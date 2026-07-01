@@ -1,11 +1,13 @@
 package com.spring.mockspring.entity;
 
+import com.dbvcs.annotation.DbvcsComment;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "product_discount")
+@DbvcsComment("Defines time-bounded promotional discounts (percentage or fixed amount) that can be applied to a product.")
 public class ProductDiscount {
 
     public enum DiscountType { PERCENTAGE, FIXED_AMOUNT }
@@ -14,22 +16,28 @@ public class ProductDiscount {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @DbvcsComment("Internal display name for the promotion, e.g. 'Summer Sale 20%'.")
     @Column(nullable = false, length = 100)
     private String label;
 
+    @DbvcsComment("PERCENTAGE applies value as a % off; FIXED_AMOUNT deducts a flat currency value.")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private DiscountType discountType = DiscountType.PERCENTAGE;
 
+    @DbvcsComment("The discount magnitude — percentage points or currency amount depending on discountType.")
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal value;
 
+    @DbvcsComment("Discount becomes active at this timestamp; purchases before this time are not discounted.")
     @Column(nullable = false)
     private LocalDateTime startsAt;
 
+    @DbvcsComment("Discount expires at this timestamp; no new orders can use it after this point.")
     @Column(nullable = false)
     private LocalDateTime endsAt;
 
+    @DbvcsComment("Allows manual early deactivation of the promotion without deleting the record.")
     @Column(nullable = false)
     private boolean active = true;
 

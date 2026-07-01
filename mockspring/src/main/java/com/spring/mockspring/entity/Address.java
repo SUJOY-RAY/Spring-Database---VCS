@@ -1,9 +1,11 @@
 package com.spring.mockspring.entity;
 
+import com.dbvcs.annotation.DbvcsComment;
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "addresses")
+@DbvcsComment("Stores the physical shipping/billing address linked one-to-one with a user account.")
 public class Address {
 
     @Id
@@ -16,12 +18,15 @@ public class Address {
     @Column(nullable = false, length = 80)
     private String city;
 
+    @DbvcsComment("State or province name.")
     @Column(nullable = false, length = 80)
     private String state;
 
+    @DbvcsComment("ZIP or postal code for the address.")
     @Column(nullable = false, length = 20)
     private String postalCode;
 
+    @DbvcsComment("ISO 3166-1 country name or code.")
     @Column(nullable = false, length = 60)
     private String country;
 

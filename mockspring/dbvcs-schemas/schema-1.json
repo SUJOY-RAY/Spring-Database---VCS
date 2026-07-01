@@ -1,5 +1,789 @@
 {
   "version" : 1,
-  "capturedAt" : "2026-07-01T17:02:06.939549300Z",
-  "entities" : [ ]
+  "capturedAt" : "2026-07-01T19:07:33.295536400Z",
+  "capturedBy" : "SUJOY-RAY <sujoygithub@gmail.com>",
+  "entities" : [ {
+    "className" : "com.spring.mockspring.entity.Address",
+    "simpleClassName" : "Address",
+    "tableName" : "addresses",
+    "comment" : "Stores the physical shipping/billing address linked one-to-one with a user account.",
+    "fields" : [ {
+      "name" : "id",
+      "javaType" : "Long",
+      "nullable" : false,
+      "id" : true,
+      "columnName" : "id",
+      "comment" : null
+    }, {
+      "name" : "street",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "street",
+      "comment" : null
+    }, {
+      "name" : "city",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "city",
+      "comment" : null
+    }, {
+      "name" : "state",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "state",
+      "comment" : "State or province name."
+    }, {
+      "name" : "postalCode",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "postal_code",
+      "comment" : "ZIP or postal code for the address."
+    }, {
+      "name" : "country",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "country",
+      "comment" : "ISO 3166-1 country name or code."
+    } ],
+    "relations" : [ {
+      "fieldName" : "user",
+      "type" : "ONE_TO_ONE",
+      "targetEntity" : "User",
+      "mappedBy" : null,
+      "optional" : false
+    } ]
+  }, {
+    "className" : "com.spring.mockspring.entity.Category",
+    "simpleClassName" : "Category",
+    "tableName" : "categories",
+    "comment" : "Organises products into a self-referencing hierarchy of categories and sub-categories.",
+    "fields" : [ {
+      "name" : "id",
+      "javaType" : "Long",
+      "nullable" : false,
+      "id" : true,
+      "columnName" : "id",
+      "comment" : null
+    }, {
+      "name" : "name",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "name",
+      "comment" : null
+    }, {
+      "name" : "description",
+      "javaType" : "String",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "description",
+      "comment" : "Optional long-form description shown on the category page."
+    } ],
+    "relations" : [ {
+      "fieldName" : "parent",
+      "type" : "MANY_TO_ONE",
+      "targetEntity" : "Category",
+      "mappedBy" : null,
+      "optional" : true
+    }, {
+      "fieldName" : "children",
+      "type" : "ONE_TO_MANY",
+      "targetEntity" : "Category",
+      "mappedBy" : "parent",
+      "optional" : true
+    }, {
+      "fieldName" : "products",
+      "type" : "MANY_TO_MANY",
+      "targetEntity" : "Product",
+      "mappedBy" : "categories",
+      "optional" : true
+    } ]
+  }, {
+    "className" : "com.spring.mockspring.entity.Order",
+    "simpleClassName" : "Order",
+    "tableName" : "orders",
+    "comment" : "Records every customer order placed through the storefront, tracking status from placement through delivery.",
+    "fields" : [ {
+      "name" : "id",
+      "javaType" : "Long",
+      "nullable" : false,
+      "id" : true,
+      "columnName" : "id",
+      "comment" : null
+    }, {
+      "name" : "orderNumber",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "order_number",
+      "comment" : "Human-readable unique reference printed on receipts and confirmation emails."
+    }, {
+      "name" : "status",
+      "javaType" : "Status",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "status",
+      "comment" : "Lifecycle state: PENDING → CONFIRMED → SHIPPED → DELIVERED, or CANCELLED."
+    }, {
+      "name" : "totalAmount",
+      "javaType" : "BigDecimal",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "total_amount",
+      "comment" : "Sum of all line totals after discounts, before tax."
+    }, {
+      "name" : "placedAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "placed_at",
+      "comment" : "Timestamp when the customer submitted the order. Immutable after creation."
+    }, {
+      "name" : "shippedAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "shipped_at",
+      "comment" : "Populated when the order transitions to SHIPPED status."
+    }, {
+      "name" : "deliveredAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "delivered_at",
+      "comment" : "Populated when the carrier confirms delivery."
+    } ],
+    "relations" : [ {
+      "fieldName" : "user",
+      "type" : "MANY_TO_ONE",
+      "targetEntity" : "User",
+      "mappedBy" : null,
+      "optional" : false
+    }, {
+      "fieldName" : "items",
+      "type" : "ONE_TO_MANY",
+      "targetEntity" : "OrderItem",
+      "mappedBy" : "order",
+      "optional" : true
+    } ]
+  }, {
+    "className" : "com.spring.mockspring.entity.OrderCoupon",
+    "simpleClassName" : "OrderCoupon",
+    "tableName" : "order_coupon",
+    "comment" : "Represents a discount coupon applied to a specific order, including percentage off and maximum discount cap.",
+    "fields" : [ {
+      "name" : "id",
+      "javaType" : "Long",
+      "nullable" : false,
+      "id" : true,
+      "columnName" : "id",
+      "comment" : null
+    }, {
+      "name" : "code",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "code",
+      "comment" : "Unique promo code string entered by the customer at checkout."
+    }, {
+      "name" : "discountPercent",
+      "javaType" : "BigDecimal",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "discount_percent",
+      "comment" : "Discount expressed as a percentage (e.g. 15.00 = 15%)."
+    }, {
+      "name" : "maxDiscountAmount",
+      "javaType" : "BigDecimal",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "max_discount_amount",
+      "comment" : "Hard cap on the monetary saving; the actual discount never exceeds this value."
+    }, {
+      "name" : "expiresAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "expires_at",
+      "comment" : "Timestamp after which the coupon can no longer be redeemed."
+    }, {
+      "name" : "active",
+      "javaType" : "boolean",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "active",
+      "comment" : "False when the coupon has been manually deactivated before its expiry date."
+    }, {
+      "name" : "createdAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "created_at",
+      "comment" : null
+    } ],
+    "relations" : [ {
+      "fieldName" : "order",
+      "type" : "MANY_TO_ONE",
+      "targetEntity" : "Order",
+      "mappedBy" : null,
+      "optional" : false
+    } ]
+  }, {
+    "className" : "com.spring.mockspring.entity.OrderItem",
+    "simpleClassName" : "OrderItem",
+    "tableName" : "order_items",
+    "comment" : "Each row is a single line item within an order, capturing the product, quantity, unit price, and computed line total.",
+    "fields" : [ {
+      "name" : "id",
+      "javaType" : "Long",
+      "nullable" : false,
+      "id" : true,
+      "columnName" : "id",
+      "comment" : null
+    }, {
+      "name" : "quantity",
+      "javaType" : "Integer",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "quantity",
+      "comment" : "Number of units of the product purchased in this line item."
+    }, {
+      "name" : "unitPrice",
+      "javaType" : "BigDecimal",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "unit_price",
+      "comment" : "Price per unit at the time the order was placed; snapshot to avoid drift if the product price changes later."
+    }, {
+      "name" : "lineTotal",
+      "javaType" : "BigDecimal",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "line_total",
+      "comment" : "Computed as quantity × unitPrice. Stored for fast reporting without recalculation."
+    } ],
+    "relations" : [ {
+      "fieldName" : "order",
+      "type" : "MANY_TO_ONE",
+      "targetEntity" : "Order",
+      "mappedBy" : null,
+      "optional" : false
+    }, {
+      "fieldName" : "product",
+      "type" : "MANY_TO_ONE",
+      "targetEntity" : "Product",
+      "mappedBy" : null,
+      "optional" : false
+    } ]
+  }, {
+    "className" : "com.spring.mockspring.entity.OrderShipment",
+    "simpleClassName" : "OrderShipment",
+    "tableName" : "order_shipment",
+    "comment" : "Tracks the shipment details for an order, including carrier, tracking number, and estimated/actual delivery timestamps.",
+    "fields" : [ {
+      "name" : "id",
+      "javaType" : "Long",
+      "nullable" : false,
+      "id" : true,
+      "columnName" : "id",
+      "comment" : null
+    }, {
+      "name" : "trackingNumber",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "tracking_number",
+      "comment" : "Carrier-issued tracking number; can be used to deep-link to the carrier tracking page."
+    }, {
+      "name" : "carrier",
+      "javaType" : "Carrier",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "carrier",
+      "comment" : "Shipping carrier responsible for delivery: UPS, FEDEX, DHL, USPS, or LOCAL courier."
+    }, {
+      "name" : "shippedAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "shipped_at",
+      "comment" : null
+    }, {
+      "name" : "estimatedDelivery",
+      "javaType" : "LocalDateTime",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "estimated_delivery",
+      "comment" : "Carrier's estimated delivery window; null if not yet provided."
+    }, {
+      "name" : "deliveredAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "delivered_at",
+      "comment" : "Actual delivery timestamp confirmed by the carrier; null until delivered."
+    }, {
+      "name" : "notes",
+      "javaType" : "String",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "notes",
+      "comment" : "Free-text field for internal handling notes or special delivery instructions."
+    } ],
+    "relations" : [ {
+      "fieldName" : "order",
+      "type" : "ONE_TO_ONE",
+      "targetEntity" : "Order",
+      "mappedBy" : null,
+      "optional" : false
+    } ]
+  }, {
+    "className" : "com.spring.mockspring.entity.Product",
+    "simpleClassName" : "Product",
+    "tableName" : "products",
+    "comment" : "Catalogue of all products available for purchase, including pricing, stock level, and availability flag.",
+    "fields" : [ {
+      "name" : "id",
+      "javaType" : "Long",
+      "nullable" : false,
+      "id" : true,
+      "columnName" : "id",
+      "comment" : null
+    }, {
+      "name" : "name",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "name",
+      "comment" : null
+    }, {
+      "name" : "description",
+      "javaType" : "String",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "description",
+      "comment" : "Long-form marketing description shown on the product detail page; supports plain text."
+    }, {
+      "name" : "price",
+      "javaType" : "BigDecimal",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "price",
+      "comment" : null
+    }, {
+      "name" : "stockQuantity",
+      "javaType" : "Integer",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "stock_quantity",
+      "comment" : "Current units in stock. Decremented on order placement; incremented on restock."
+    }, {
+      "name" : "available",
+      "javaType" : "boolean",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "available",
+      "comment" : "False hides the product from the storefront without deleting it."
+    }, {
+      "name" : "createdAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "created_at",
+      "comment" : null
+    } ],
+    "relations" : [ {
+      "fieldName" : "categories",
+      "type" : "MANY_TO_MANY",
+      "targetEntity" : "Category",
+      "mappedBy" : null,
+      "optional" : true
+    }, {
+      "fieldName" : "orderItems",
+      "type" : "ONE_TO_MANY",
+      "targetEntity" : "OrderItem",
+      "mappedBy" : "product",
+      "optional" : true
+    }, {
+      "fieldName" : "reviews",
+      "type" : "ONE_TO_MANY",
+      "targetEntity" : "Review",
+      "mappedBy" : "product",
+      "optional" : true
+    } ]
+  }, {
+    "className" : "com.spring.mockspring.entity.ProductDiscount",
+    "simpleClassName" : "ProductDiscount",
+    "tableName" : "product_discount",
+    "comment" : "Defines time-bounded promotional discounts (percentage or fixed amount) that can be applied to a product.",
+    "fields" : [ {
+      "name" : "id",
+      "javaType" : "Long",
+      "nullable" : false,
+      "id" : true,
+      "columnName" : "id",
+      "comment" : null
+    }, {
+      "name" : "label",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "label",
+      "comment" : "Internal display name for the promotion, e.g. 'Summer Sale 20%'."
+    }, {
+      "name" : "discountType",
+      "javaType" : "DiscountType",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "discount_type",
+      "comment" : "PERCENTAGE applies value as a % off; FIXED_AMOUNT deducts a flat currency value."
+    }, {
+      "name" : "value",
+      "javaType" : "BigDecimal",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "value",
+      "comment" : "The discount magnitude — percentage points or currency amount depending on discountType."
+    }, {
+      "name" : "startsAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "starts_at",
+      "comment" : "Discount becomes active at this timestamp; purchases before this time are not discounted."
+    }, {
+      "name" : "endsAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "ends_at",
+      "comment" : "Discount expires at this timestamp; no new orders can use it after this point."
+    }, {
+      "name" : "active",
+      "javaType" : "boolean",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "active",
+      "comment" : "Allows manual early deactivation of the promotion without deleting the record."
+    } ],
+    "relations" : [ {
+      "fieldName" : "product",
+      "type" : "MANY_TO_ONE",
+      "targetEntity" : "Product",
+      "mappedBy" : null,
+      "optional" : false
+    } ]
+  }, {
+    "className" : "com.spring.mockspring.entity.ProductImage",
+    "simpleClassName" : "ProductImage",
+    "tableName" : "product_image",
+    "comment" : "Holds image URLs and metadata for product photos, supporting multiple images per product with sort order and a primary flag.",
+    "fields" : [ {
+      "name" : "id",
+      "javaType" : "Long",
+      "nullable" : false,
+      "id" : true,
+      "columnName" : "id",
+      "comment" : null
+    }, {
+      "name" : "url",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "url",
+      "comment" : null
+    }, {
+      "name" : "altText",
+      "javaType" : "String",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "alt_text",
+      "comment" : null
+    }, {
+      "name" : "sortOrder",
+      "javaType" : "int",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "sort_order",
+      "comment" : null
+    }, {
+      "name" : "primary",
+      "javaType" : "boolean",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "primary",
+      "comment" : null
+    }, {
+      "name" : "uploadedAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "uploaded_at",
+      "comment" : null
+    } ],
+    "relations" : [ {
+      "fieldName" : "product",
+      "type" : "MANY_TO_ONE",
+      "targetEntity" : "Product",
+      "mappedBy" : null,
+      "optional" : false
+    } ]
+  }, {
+    "className" : "com.spring.mockspring.entity.Review",
+    "simpleClassName" : "Review",
+    "tableName" : "reviews",
+    "comment" : "Customer-submitted product reviews with a 1–5 star rating, optional title, and free-text body.",
+    "fields" : [ {
+      "name" : "id",
+      "javaType" : "Long",
+      "nullable" : false,
+      "id" : true,
+      "columnName" : "id",
+      "comment" : null
+    }, {
+      "name" : "rating",
+      "javaType" : "Integer",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "rating",
+      "comment" : null
+    }, {
+      "name" : "title",
+      "javaType" : "String",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "title",
+      "comment" : null
+    }, {
+      "name" : "body",
+      "javaType" : "String",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "body",
+      "comment" : null
+    }, {
+      "name" : "createdAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "created_at",
+      "comment" : null
+    } ],
+    "relations" : [ {
+      "fieldName" : "user",
+      "type" : "MANY_TO_ONE",
+      "targetEntity" : "User",
+      "mappedBy" : null,
+      "optional" : false
+    }, {
+      "fieldName" : "product",
+      "type" : "MANY_TO_ONE",
+      "targetEntity" : "Product",
+      "mappedBy" : null,
+      "optional" : false
+    } ]
+  }, {
+    "className" : "com.spring.mockspring.entity.User",
+    "simpleClassName" : "User",
+    "tableName" : "users",
+    "comment" : "Registered user accounts including authentication credentials, personal details, and account status.",
+    "fields" : [ {
+      "name" : "id",
+      "javaType" : "Long",
+      "nullable" : false,
+      "id" : true,
+      "columnName" : "id",
+      "comment" : null
+    }, {
+      "name" : "email",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "email",
+      "comment" : null
+    }, {
+      "name" : "firstName",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "first_name",
+      "comment" : null
+    }, {
+      "name" : "lastName",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "last_name",
+      "comment" : null
+    }, {
+      "name" : "passwordHash",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "password_hash",
+      "comment" : null
+    }, {
+      "name" : "active",
+      "javaType" : "boolean",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "active",
+      "comment" : null
+    }, {
+      "name" : "createdAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "created_at",
+      "comment" : null
+    } ],
+    "relations" : [ {
+      "fieldName" : "address",
+      "type" : "ONE_TO_ONE",
+      "targetEntity" : "Address",
+      "mappedBy" : "user",
+      "optional" : true
+    }, {
+      "fieldName" : "orders",
+      "type" : "ONE_TO_MANY",
+      "targetEntity" : "Order",
+      "mappedBy" : "user",
+      "optional" : true
+    }, {
+      "fieldName" : "reviews",
+      "type" : "ONE_TO_MANY",
+      "targetEntity" : "Review",
+      "mappedBy" : "user",
+      "optional" : true
+    } ]
+  }, {
+    "className" : "com.spring.mockspring.entity.UserNotification",
+    "simpleClassName" : "UserNotification",
+    "tableName" : "user_notification",
+    "comment" : "In-app notifications sent to users for order updates, promotions, system alerts, and review replies.",
+    "fields" : [ {
+      "name" : "id",
+      "javaType" : "Long",
+      "nullable" : false,
+      "id" : true,
+      "columnName" : "id",
+      "comment" : null
+    }, {
+      "name" : "type",
+      "javaType" : "NotificationType",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "type",
+      "comment" : null
+    }, {
+      "name" : "title",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "title",
+      "comment" : null
+    }, {
+      "name" : "message",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "message",
+      "comment" : null
+    }, {
+      "name" : "read",
+      "javaType" : "boolean",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "read",
+      "comment" : null
+    }, {
+      "name" : "createdAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "created_at",
+      "comment" : null
+    }, {
+      "name" : "readAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "read_at",
+      "comment" : null
+    } ],
+    "relations" : [ {
+      "fieldName" : "user",
+      "type" : "MANY_TO_ONE",
+      "targetEntity" : "User",
+      "mappedBy" : null,
+      "optional" : false
+    } ]
+  }, {
+    "className" : "com.spring.mockspring.entity.UserSession",
+    "simpleClassName" : "UserSession",
+    "tableName" : "user_session",
+    "comment" : "Tracks active and historical login sessions per user, storing the auth token, client IP, user-agent, and expiry time.",
+    "fields" : [ {
+      "name" : "id",
+      "javaType" : "Long",
+      "nullable" : false,
+      "id" : true,
+      "columnName" : "id",
+      "comment" : null
+    }, {
+      "name" : "token",
+      "javaType" : "String",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "token",
+      "comment" : null
+    }, {
+      "name" : "ipAddress",
+      "javaType" : "String",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "ip_address",
+      "comment" : null
+    }, {
+      "name" : "userAgent",
+      "javaType" : "String",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "user_agent",
+      "comment" : null
+    }, {
+      "name" : "createdAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "created_at",
+      "comment" : null
+    }, {
+      "name" : "expiresAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : false,
+      "id" : false,
+      "columnName" : "expires_at",
+      "comment" : null
+    }, {
+      "name" : "revokedAt",
+      "javaType" : "LocalDateTime",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "revoked_at",
+      "comment" : null
+    } ],
+    "relations" : [ {
+      "fieldName" : "user",
+      "type" : "MANY_TO_ONE",
+      "targetEntity" : "User",
+      "mappedBy" : null,
+      "optional" : false
+    } ]
+  } ]
 }

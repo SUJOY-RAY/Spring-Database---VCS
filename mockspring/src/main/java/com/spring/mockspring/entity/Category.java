@@ -1,10 +1,12 @@
 package com.spring.mockspring.entity;
 
+import com.dbvcs.annotation.DbvcsComment;
 import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
 @Table(name = "categories")
+@DbvcsComment("Organises products into a self-referencing hierarchy of categories and sub-categories.")
 public class Category {
 
     @Id
@@ -14,6 +16,7 @@ public class Category {
     @Column(nullable = false, unique = true, length = 80)
     private String name;
 
+    @DbvcsComment("Optional long-form description shown on the category page.")
     @Column(length = 255)
     private String description;
 

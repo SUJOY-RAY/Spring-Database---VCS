@@ -6,8 +6,9 @@ import com.dbvcs.scanner.ClasspathEntityFinder;
 import com.dbvcs.scanner.EntityScanner;
 import com.dbvcs.versioning.SchemaDiffer;
 import com.dbvcs.versioning.SchemaVersionStore;
-import org.springframework.context.ApplicationContext;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Set;
 
@@ -50,7 +51,8 @@ public class DbvcsService {
 
         if (differ.hasChanged(previous, entities)) {
             int nextVersion = latest + 1;
-            SchemaSnapshot snapshot = new SchemaSnapshot(nextVersion, entities);
+            String author = resolveGitAuthor();
+            SchemaSnapshot snapshot = new SchemaSnapshot(nextVersion, author, entities);
             store.save(snapshot);
             activeSnapshot = snapshot;
             System.out.println("[dbvcs] New schema version saved: schema-" + nextVersion + ".json"
@@ -58,6 +60,36 @@ public class DbvcsService {
         } else {
             activeSnapshot = previous;
             System.out.println("[dbvcs] Schema unchanged. Current version: " + latest);
+        }
+    }
+
+    /**
+     * Reads the git user name and email from the local git config.
+     * Falls back to the OS user name if git is not available.
+     */
+    private String resolveGitAuthor() {
+        String name = runGitConfig("user.name");
+        String email = runGitConfig("user.email");
+        if (name != null && !name.isBlank()) {
+            return email != null && !email.isBlank()
+                    ? name + " <" + email + ">"
+                    : name;
+        }
+        return System.getProperty("user.name", "unknown");
+    }
+
+    private String runGitConfig(String key) {
+        try {
+            Process p = new ProcessBuilder("git", "config", "--get", key)
+                    .redirectErrorStream(true)
+                    .start();
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+                String line = br.readLine();
+                p.waitFor();
+                return (line != null) ? line.trim() : null;
+            }
+        } catch (Exception e) {
+            return null;
         }
     }
 

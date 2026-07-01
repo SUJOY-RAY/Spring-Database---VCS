@@ -1,10 +1,12 @@
 package com.spring.mockspring.entity;
 
+import com.dbvcs.annotation.DbvcsComment;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_notification")
+@DbvcsComment("In-app notifications sent to users for order updates, promotions, system alerts, and review replies.")
 public class UserNotification {
 
     public enum NotificationType { ORDER_UPDATE, PROMO, SYSTEM, REVIEW_REPLY }

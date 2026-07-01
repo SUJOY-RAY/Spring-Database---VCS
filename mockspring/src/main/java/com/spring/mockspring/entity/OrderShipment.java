@@ -1,10 +1,12 @@
 package com.spring.mockspring.entity;
 
+import com.dbvcs.annotation.DbvcsComment;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "order_shipment")
+@DbvcsComment("Tracks the shipment details for an order, including carrier, tracking number, and estimated/actual delivery timestamps.")
 public class OrderShipment {
 
     public enum Carrier { UPS, FEDEX, DHL, USPS, LOCAL }
@@ -13,9 +15,11 @@ public class OrderShipment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @DbvcsComment("Carrier-issued tracking number; can be used to deep-link to the carrier tracking page.")
     @Column(nullable = false, unique = true, length = 80)
     private String trackingNumber;
 
+    @DbvcsComment("Shipping carrier responsible for delivery: UPS, FEDEX, DHL, USPS, or LOCAL courier.")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Carrier carrier = Carrier.LOCAL;
@@ -23,10 +27,13 @@ public class OrderShipment {
     @Column(nullable = false)
     private LocalDateTime shippedAt = LocalDateTime.now();
 
+    @DbvcsComment("Carrier's estimated delivery window; null if not yet provided.")
     private LocalDateTime estimatedDelivery;
 
+    @DbvcsComment("Actual delivery timestamp confirmed by the carrier; null until delivered.")
     private LocalDateTime deliveredAt;
 
+    @DbvcsComment("Free-text field for internal handling notes or special delivery instructions.")
     @Column(length = 255)
     private String notes;
 

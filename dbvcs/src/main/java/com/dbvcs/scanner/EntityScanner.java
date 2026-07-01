@@ -1,5 +1,6 @@
 package com.dbvcs.scanner;
 
+import com.dbvcs.annotation.DbvcsComment;
 import com.dbvcs.model.EntitySchema;
 import com.dbvcs.model.FieldSchema;
 import com.dbvcs.model.RelationSchema;
@@ -43,7 +44,10 @@ public class EntityScanner {
 
     private EntitySchema buildEntitySchema(Class<?> clazz) {
         String tableName = resolveTableName(clazz);
-        List<FieldSchema> fields = new ArrayList<>();
+        String comment   = clazz.isAnnotationPresent(DbvcsComment.class)
+                ? clazz.getAnnotation(DbvcsComment.class).value()
+                : null;
+        List<FieldSchema>    fields    = new ArrayList<>();
         List<RelationSchema> relations = new ArrayList<>();
 
         for (Field field : getAllFields(clazz)) {
@@ -60,6 +64,7 @@ public class EntityScanner {
                 clazz.getName(),
                 clazz.getSimpleName(),
                 tableName,
+                comment,
                 fields,
                 relations
         );
@@ -71,11 +76,14 @@ public class EntityScanner {
 
     private FieldSchema buildFieldSchema(Field field) {
         String columnName = resolveColumnName(field);
-        boolean isId = field.isAnnotationPresent(Id.class);
-        boolean nullable = resolveNullable(field, isId);
-        String javaType = field.getType().getSimpleName();
+        boolean isId      = field.isAnnotationPresent(Id.class);
+        boolean nullable  = resolveNullable(field, isId);
+        String javaType   = field.getType().getSimpleName();
+        String comment    = field.isAnnotationPresent(DbvcsComment.class)
+                ? field.getAnnotation(DbvcsComment.class).value()
+                : null;
 
-        return new FieldSchema(field.getName(), javaType, nullable, isId, columnName);
+        return new FieldSchema(field.getName(), javaType, nullable, isId, columnName, comment);
     }
 
     private RelationSchema buildRelationSchema(Field field) {

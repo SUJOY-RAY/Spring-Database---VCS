@@ -10,6 +10,7 @@ public class FieldSchema {
     private boolean nullable;
     private boolean id;
     private String columnName;
+    private String comment;
 
     public FieldSchema() {}
 
@@ -19,6 +20,16 @@ public class FieldSchema {
         this.nullable = nullable;
         this.id = id;
         this.columnName = columnName;
+    }
+
+    public FieldSchema(String name, String javaType, boolean nullable, boolean id,
+                       String columnName, String comment) {
+        this.name = name;
+        this.javaType = javaType;
+        this.nullable = nullable;
+        this.id = id;
+        this.columnName = columnName;
+        this.comment = comment;
     }
 
     public String getName() { return name; }
@@ -35,4 +46,7 @@ public class FieldSchema {
 
     public String getColumnName() { return columnName; }
     public void setColumnName(String columnName) { this.columnName = columnName; }
+
+    public String getComment() { return comment; }
+    public void setComment(String comment) { this.comment = comment; }
 }

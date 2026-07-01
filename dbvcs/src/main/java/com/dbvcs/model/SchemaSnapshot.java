@@ -10,13 +10,15 @@ public class SchemaSnapshot {
 
     private int version;
     private String capturedAt;
+    private String capturedBy;
     private List<EntitySchema> entities;
 
     public SchemaSnapshot() {}
 
-    public SchemaSnapshot(int version, List<EntitySchema> entities) {
+    public SchemaSnapshot(int version, String capturedBy, List<EntitySchema> entities) {
         this.version = version;
         this.capturedAt = Instant.now().toString();
+        this.capturedBy = capturedBy;
         this.entities = entities;
     }
 
@@ -25,6 +27,9 @@ public class SchemaSnapshot {
 
     public String getCapturedAt() { return capturedAt; }
     public void setCapturedAt(String capturedAt) { this.capturedAt = capturedAt; }
+
+    public String getCapturedBy() { return capturedBy; }
+    public void setCapturedBy(String capturedBy) { this.capturedBy = capturedBy; }
 
     public List<EntitySchema> getEntities() { return entities; }
     public void setEntities(List<EntitySchema> entities) { this.entities = entities; }

@@ -1,10 +1,12 @@
 package com.spring.mockspring.entity;
 
+import com.dbvcs.annotation.DbvcsComment;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "reviews")
+@DbvcsComment("Customer-submitted product reviews with a 1–5 star rating, optional title, and free-text body.")
 public class Review {
 
     @Id
