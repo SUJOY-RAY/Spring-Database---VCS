@@ -879,14 +879,16 @@ function renderTableChangelog(entity) {
       ${allChanges.length > 0 ? `
         <div class="cl-changes-box" style="margin-top:8px">
           <div class="cl-changes-label">${allChanges.length} Change${allChanges.length!==1?'s':''}</div>
-          <div class="cl-entity-list" style="padding-top:18px">
+          <div class="cl-entity-list" style="padding-top:20px">
             ${allChanges.map(c => {
               const isAdd = c.startsWith('+'), isRem = c.startsWith('-'), isMod = c.startsWith('~');
               const color = isAdd ? 'var(--success)' : isRem ? 'var(--danger)' : 'var(--warning)';
+              const bgCol = isAdd ? 'var(--success-light)' : isRem ? 'var(--danger-light)' : 'var(--warning-light)';
               const icon  = isAdd ? '+' : isRem ? '−' : '~';
-              return `<div class="cl-entity-item" style="cursor:default">
-                <span style="color:${color};font-weight:700;width:16px;text-align:center">${icon}</span>
-                <code style="font-size:11px;color:var(--text-muted)">${escapeHtml(c.slice(2))}</code>
+              const text  = c.slice(2).trim();
+              return `<div class="cl-entity-item" style="cursor:default;gap:10px">
+                <span style="width:18px;height:18px;border-radius:4px;background:${bgCol};color:${color};font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${icon}</span>
+                <span style="font-family:'JetBrains Mono',Consolas,monospace;font-size:12px;color:var(--text)">${escapeHtml(text)}</span>
               </div>`;
             }).join('')}
           </div>
@@ -1264,8 +1266,7 @@ function renderChangelog() {
       const toShow  = isExpanded ? allChanges : allChanges.slice(0, showMax);
 
       const list = document.createElement('div');
-      list.className = 'cl-entity-list';
-      toShow.forEach(e => {
+      list.className = 'cl-entity-list';      toShow.forEach(e => {
         const item = document.createElement('div');
         item.className = `cl-entity-item cl-entity-${e._status}`;
 
@@ -1390,7 +1391,445 @@ function viewVersion(version) {
   });
 }
 
-// ── Diagram (full ER) ─────────────────────────────────────
+// ── Export HTML ───────────────────────────────────────────
+document.getElementById('btn-export-html').addEventListener('click', exportHtml);
+
+function exportHtml() {
+  if (!schema) { showToast('No schema loaded', true); return; }
+
+  const isTableView = !!activeTable;
+  const entity = isTableView
+    ? schema.entities.find(e => e.simpleClassName === activeTable)
+    : null;
+
+  const title = isTableView
+    ? `${entity.tableName} — dbvcs docs`
+    : `Schema v${schema.version} — dbvcs docs`;
+
+  // ── Build page sections ──────────────────────────────────
+  let bodyHtml = '';
+
+  // 1. Wiki section
+  bodyHtml += `<section class="export-section" id="section-wiki">
+    <div class="export-section-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Wiki
+    </div>
+    ${isTableView ? buildExportTableWiki(entity) : buildExportSystemWiki()}
+  </section>`;
+
+  // 2. Diagram section (SVG snapshot)
+  bodyHtml += `<section class="export-section" id="section-diagram">
+    <div class="export-section-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="17.5" y1="10" x2="17.5" y2="14"/><line x1="6.5" y1="10" x2="17.5" y2="10"/><line x1="6.5" y1="10" x2="6.5" y2="14"/></svg>
+      Diagram
+    </div>
+    ${buildExportDiagram(entity)}
+  </section>`;
+
+  // 3. Changelog section
+  bodyHtml += `<section class="export-section" id="section-changelog">
+    <div class="export-section-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Changelog
+    </div>
+    ${isTableView ? buildExportTableChangelog(entity) : buildExportSystemChangelog()}
+  </section>`;
+
+  // ── Assemble full HTML ───────────────────────────────────
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>${escapeHtml(title)}</title>
+  <style>${exportCss()}</style>
+</head>
+<body>
+  <header class="ex-topbar">
+    <div class="ex-brand">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <ellipse cx="12" cy="5" rx="9" ry="3"/>
+        <path d="M3 5v6c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+        <path d="M3 11v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6"/>
+      </svg>
+      <span>dbvcs</span>
+    </div>
+    <div class="ex-title">${escapeHtml(isTableView ? entity.tableName : 'Schema Overview')}</div>
+    <div class="ex-meta">
+      Version ${schema.version}
+      &nbsp;·&nbsp;
+      ${schema.capturedAt ? new Date(schema.capturedAt).toLocaleString() : ''}
+      ${schema.capturedBy ? '&nbsp;·&nbsp; by ' + escapeHtml(schema.capturedBy) : ''}
+    </div>
+  </header>
+
+  <nav class="ex-nav">
+    <a href="#section-wiki">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Wiki
+    </a>
+    <a href="#section-diagram">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="17.5" y1="10" x2="17.5" y2="14"/><line x1="6.5" y1="10" x2="17.5" y2="10"/><line x1="6.5" y1="10" x2="6.5" y2="14"/></svg>
+      Diagram
+    </a>
+    <a href="#section-changelog">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Changelog
+    </a>
+    <span class="ex-nav-spacer"></span>
+    <span class="ex-generated">Generated by dbvcs · ${new Date().toLocaleString()}</span>
+  </nav>
+
+  <main class="ex-main">
+    ${bodyHtml}
+  </main>
+</body>
+</html>`;
+
+  // ── Download ─────────────────────────────────────────────
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = isTableView
+    ? `dbvcs-${entity.tableName}-v${schema.version}.html`
+    : `dbvcs-schema-v${schema.version}.html`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast(`Exported ${a.download}`);
+}
+
+// ── Export: Table Wiki ────────────────────────────────────
+function buildExportTableWiki(entity) {
+  const fields    = entity.fields    || [];
+  const relations = entity.relations || [];
+  const desc = entity.comment
+    ? escapeHtml(entity.comment)
+    : `Stores information about each ${entity.tableName.replace(/_/g, ' ')} record in the system.`;
+
+  // FK map
+  const fkTargets = {};
+  relations.forEach(r => {
+    if (r.type === 'MANY_TO_ONE' || r.type === 'ONE_TO_ONE') fkTargets[r.fieldName] = r.targetEntity;
+  });
+
+  const fieldRows = fields.map(f => {
+    const isPk = f.id;
+    const isFk = !!fkTargets[f.name];
+    const tags = [
+      isPk ? '<span class="ex-tag ex-pk">PK</span><span class="ex-tag ex-inc">increment</span>' : '',
+      isFk ? '<span class="ex-tag ex-fk">FK</span>' : '',
+      !f.nullable && !isPk ? '<span class="ex-tag ex-nn">NOT NULL</span>' : '',
+      f.nullable  && !isPk ? '<span class="ex-tag ex-null">null</span>'   : ''
+    ].join('');
+    const note = f.comment ? escapeHtml(f.comment) : generateFieldDesc(f);
+    return `<tr>
+      <td><span class="ex-col-badge ${isPk ? 'pk' : ''}">${isPk ? 'PK' : getTypeAbbr(f.javaType)}</span> ${escapeHtml(f.columnName || f.name)}</td>
+      <td><code>${mapSqlType(f.javaType)}</code></td>
+      <td>${tags || '—'}</td>
+      <td style="color:#7a829e;font-size:12px">${note}</td>
+    </tr>`;
+  }).join('');
+
+  const relRows = relations.map(r =>
+    `<tr>
+      <td>${escapeHtml(r.fieldName)}</td>
+      <td><span class="ex-rel-badge">${r.type.replace(/_/g,' ')}</span></td>
+      <td>${escapeHtml(r.targetEntity)}</td>
+      <td style="color:#7a829e;font-size:12px">${r.mappedBy ? 'mapped by ' + r.mappedBy : (r.optional ? 'optional' : 'required')}</td>
+    </tr>`
+  ).join('');
+
+  return `
+    <div class="ex-page-header">
+      <div class="ex-page-title">
+        <span class="ex-table-badge">T</span>
+        <h1>${escapeHtml(entity.tableName)}</h1>
+      </div>
+      <div class="ex-page-meta">
+        <span>${fields.length} fields</span>
+        <span>${relations.length} relations</span>
+        <span>${escapeHtml(entity.simpleClassName)}</span>
+      </div>
+    </div>
+    <div class="ex-card">
+      <h3>Description</h3>
+      <p>${desc}</p>
+    </div>
+    <div class="ex-card">
+      <h3>Fields (${fields.length})</h3>
+      <table class="ex-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+        <tbody>${fieldRows}</tbody>
+      </table>
+    </div>
+    ${relations.length > 0 ? `
+    <div class="ex-card">
+      <h3>Relationships (${relations.length})</h3>
+      <table class="ex-table">
+        <thead><tr><th>Field</th><th>Type</th><th>Target</th><th>Notes</th></tr></thead>
+        <tbody>${relRows}</tbody>
+      </table>
+    </div>` : ''}`;
+}
+
+// ── Export: System Wiki ───────────────────────────────────
+function buildExportSystemWiki() {
+  const entities = schema.entities || [];
+  const totalFields    = entities.reduce((s,e) => s + (e.fields    || []).length, 0);
+  const totalRelations = entities.reduce((s,e) => s + (e.relations || []).length, 0);
+
+  const groups = {};
+  entities.forEach(e => {
+    const g = deriveGroup(e);
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(e);
+  });
+
+  const groupCards = Object.entries(groups).sort(([a],[b]) => a.localeCompare(b)).map(([g, ents]) => {
+    const [col] = groupColor(g);
+    const rows = ents.map(e =>
+      `<tr>
+        <td><strong>${escapeHtml(e.tableName)}</strong></td>
+        <td style="color:#7a829e">${escapeHtml(e.simpleClassName)}</td>
+        <td style="color:#7a829e">${(e.fields||[]).length}</td>
+        <td style="color:#7a829e">${(e.relations||[]).length}</td>
+        <td style="color:#7a829e;font-size:11px">${e.comment ? escapeHtml(e.comment.substring(0,80))+(e.comment.length>80?'…':'') : '—'}</td>
+      </tr>`
+    ).join('');
+    return `<div class="ex-card">
+      <h3 style="color:${col}">${g.charAt(0).toUpperCase()+g.slice(1)} (${ents.length} tables)</h3>
+      <table class="ex-table">
+        <thead><tr><th>Table</th><th>Class</th><th>Fields</th><th>Relations</th><th>Description</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="ex-page-header">
+      <div class="ex-page-title">
+        <span class="ex-table-badge" style="background:#0d9488">S</span>
+        <h1>Schema Overview</h1>
+      </div>
+      <div class="ex-page-meta">
+        <span>${entities.length} tables</span>
+        <span>${totalFields} fields</span>
+        <span>${totalRelations} relations</span>
+        <span>${Object.keys(groups).length} domain groups</span>
+      </div>
+    </div>
+    ${groupCards}`;
+}
+
+// ── Export: Diagram (SVG snapshot) ───────────────────────
+function buildExportDiagram(entity) {
+  // Snapshot the live SVG canvas
+  const svgEl = document.getElementById('canvas');
+  if (!svgEl) return '<p style="color:#7a829e">No diagram available</p>';
+
+  // If table view, render the focused diagram first
+  if (entity) {
+    renderTableDiagram(entity.simpleClassName);
+  } else {
+    autoLayout();
+    renderCanvas();
+  }
+
+  // Clone and serialise
+  const clone = svgEl.cloneNode(true);
+  // Remove animations for static export
+  clone.querySelectorAll('style').forEach(s => s.remove());
+  clone.querySelectorAll('path[id^="rel-pulse"]').forEach(p => p.remove());
+
+  const bbox = svgEl.getBoundingClientRect();
+  clone.setAttribute('width',  bbox.width  || 900);
+  clone.setAttribute('height', bbox.height || 500);
+  clone.style.cssText = 'display:block;max-width:100%;border:1px solid #dde2ee;border-radius:8px;background:#f8f9fc';
+
+  const serialised = new XMLSerializer().serializeToString(clone);
+  return `<div class="ex-card ex-diagram-wrap">${serialised}</div>`;
+}
+
+// ── Export: Table Changelog ───────────────────────────────
+function buildExportTableChangelog(entity) {
+  if (!changelogData || changelogData.length === 0) return '<p style="color:#7a829e">No changelog data available</p>';
+
+  const relevant = [];
+  changelogData.forEach(entry => {
+    const diff = entry.diff || {};
+    [{ list: diff.added||[], status:'added' }, { list: diff.modified||[], status:'modified' }, { list: diff.removed||[], status:'removed' }]
+      .forEach(({ list, status }) => {
+        const match = list.find(e => e.simpleClassName === entity.simpleClassName);
+        if (match) relevant.push({ entry, match, status });
+      });
+  });
+
+  if (relevant.length === 0) return '<p style="color:#7a829e">No recorded changes for this table</p>';
+
+  return relevant.map(({ entry, match, status }) => {
+    const { displayName } = parseAuthor(entry.capturedBy);
+    const timeAgo = formatTimeAgo(entry.capturedAt);
+    const color = status === 'added' ? '#22c55e' : status === 'removed' ? '#ef4444' : '#f59e0b';
+    const changes = [...(match.fieldChanges||[]), ...(match.relationChanges||[])];
+    const changeRows = changes.map(c => {
+      const isAdd=c.startsWith('+'), isRem=c.startsWith('-');
+      const col = isAdd?'#22c55e':isRem?'#ef4444':'#f59e0b';
+      const icon= isAdd?'+':isRem?'−':'~';
+      return `<div style="display:flex;gap:10px;padding:6px 16px;border-bottom:1px solid #eaecf4;font-family:monospace;font-size:12px">
+        <span style="color:${col};font-weight:700">${icon}</span>
+        <span>${escapeHtml(c.slice(2).trim())}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="ex-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <strong>Version #${entry.version}</strong>
+          <span style="font-size:11px;padding:2px 8px;border-radius:20px;background:${color}22;color:${color};font-weight:600">${status}</span>
+        </div>
+        <span style="font-size:12px;color:#7a829e">${timeAgo}</span>
+      </div>
+      <div style="font-size:13px;color:#7a829e;margin-bottom:${changes.length?12:0}px">by ${escapeHtml(displayName)}</div>
+      ${changes.length ? `<div style="border:1px solid #dde2ee;border-radius:6px;overflow:hidden">${changeRows}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Export: System Changelog ──────────────────────────────
+function buildExportSystemChangelog() {
+  if (!changelogData || changelogData.length === 0) return '<p style="color:#7a829e">No changelog data available</p>';
+
+  return changelogData.map(entry => {
+    const diff     = entry.diff || {};
+    const added    = diff.added    || [];
+    const removed  = diff.removed  || [];
+    const modified = diff.modified || [];
+    const { displayName } = parseAuthor(entry.capturedBy);
+    const timeAgo  = formatTimeAgo(entry.capturedAt);
+    const title    = buildCommitTitle(entry, diff, false);
+
+    const allChanges = [
+      ...added.map(e => ({ ...e, _s:'added' })),
+      ...removed.map(e => ({ ...e, _s:'removed' })),
+      ...modified.map(e => ({ ...e, _s:'modified' }))
+    ];
+
+    const changeRows = allChanges.map(e => {
+      const color = e._s==='added'?'#22c55e':e._s==='removed'?'#ef4444':'#f59e0b';
+      const icon  = e._s==='added'?'+':e._s==='removed'?'−':'~';
+      const subs  = [...(e.fieldChanges||[]), ...(e.relationChanges||[])].slice(0,4);
+      return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 16px;border-bottom:1px solid #eaecf4;font-size:13px">
+        <span style="color:${color};font-weight:700;font-size:14px;width:16px;text-align:center;flex-shrink:0">${icon}</span>
+        <div>
+          <span style="font-weight:600">${escapeHtml(e.tableName)}</span>
+          ${subs.length ? `<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:4px">${subs.map(c=>`<code style="font-size:10px;background:#f1f3f8;border:1px solid #dde2ee;border-radius:3px;padding:1px 5px">${escapeHtml(c)}</code>`).join('')}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="ex-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <strong>${escapeHtml(title)}</strong>
+          <span style="color:#7a829e;font-size:13px">#${entry.version}</span>
+        </div>
+        <span style="font-size:12px;color:#7a829e">${timeAgo}</span>
+      </div>
+      <div style="font-size:13px;color:#7a829e;margin-bottom:${allChanges.length?10:0}px">by ${escapeHtml(displayName)}</div>
+      ${allChanges.length ? `<div style="border:1px solid #dde2ee;border-radius:6px;overflow:hidden">${changeRows}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Export CSS (self-contained) ───────────────────────────
+function exportCss() {
+  return `
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+           background: #f8f9fc; color: #1a1d2e; font-size: 14px; line-height: 1.5; }
+
+    /* Topbar */
+    .ex-topbar { background: #fff; border-bottom: 1px solid #dde2ee; padding: 12px 32px;
+                 display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .ex-brand  { display: flex; align-items: center; gap: 7px; font-size: 16px;
+                 font-weight: 700; color: #5b6ef5; }
+    .ex-title  { font-size: 15px; font-weight: 600; color: #1a1d2e; flex: 1; }
+    .ex-meta   { font-size: 12px; color: #7a829e; }
+
+    /* Nav */
+    .ex-nav { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #dde2ee;
+              padding: 0 32px; display: flex; align-items: center; gap: 4px; z-index: 100; }
+    .ex-nav a { display: flex; align-items: center; gap: 6px; padding: 10px 14px; color: #7a829e;
+                text-decoration: none; font-size: 13px; font-weight: 500;
+                border-bottom: 2px solid transparent; transition: color 0.12s, border-color 0.12s; }
+    .ex-nav a:hover { color: #5b6ef5; border-bottom-color: #5b6ef5; }
+    .ex-nav-spacer { flex: 1; }
+    .ex-generated  { font-size: 11px; color: #a0a8c0; }
+
+    /* Main */
+    .ex-main { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+    /* Section */
+    .export-section { margin-bottom: 48px; }
+    .export-section-title { display: flex; align-items: center; gap: 8px; font-size: 18px;
+                            font-weight: 700; color: #1a1d2e; margin-bottom: 20px;
+                            padding-bottom: 10px; border-bottom: 2px solid #5b6ef5; }
+
+    /* Page header */
+    .ex-page-header { margin-bottom: 20px; }
+    .ex-page-title  { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .ex-page-title h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; }
+    .ex-table-badge { width: 28px; height: 28px; border-radius: 5px; background: #5b6ef5;
+                      display: flex; align-items: center; justify-content: center; color: #fff;
+                      font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .ex-page-meta   { display: flex; gap: 16px; font-size: 12px; color: #7a829e;
+                      padding-left: 38px; }
+
+    /* Card */
+    .ex-card { background: #fff; border: 1px solid #dde2ee; border-radius: 10px;
+               padding: 20px 24px; margin-bottom: 16px; }
+    .ex-card h3 { font-size: 14px; font-weight: 600; color: #1a1d2e; margin-bottom: 14px; }
+    .ex-card p  { font-size: 13px; color: #7a829e; line-height: 1.7; }
+
+    /* Table */
+    .ex-table { width: 100%; border-collapse: collapse; font-size: 12.5px;
+                border: 1px solid #dde2ee; border-radius: 8px; overflow: hidden; }
+    .ex-table th { text-align: left; padding: 8px 12px; font-weight: 600; font-size: 11px;
+                   color: #7a829e; background: #f1f3f8; border-bottom: 1px solid #dde2ee; }
+    .ex-table td { padding: 9px 12px; border-bottom: 1px solid #eaecf4; color: #1a1d2e;
+                   vertical-align: middle; }
+    .ex-table tr:last-child td { border-bottom: none; }
+    .ex-table code { background: #f1f3f8; border: 1px solid #dde2ee; border-radius: 4px;
+                     padding: 1px 6px; font-family: monospace; font-size: 11px; }
+
+    /* Tags */
+    .ex-tag { display: inline-flex; padding: 2px 7px; border-radius: 4px; font-size: 10px;
+              font-weight: 600; margin-right: 3px; }
+    .ex-pk   { background: rgba(245,158,11,.12); color: #f59e0b; border: 1px solid rgba(245,158,11,.25); }
+    .ex-fk   { background: rgba(91,110,245,.08); color: #5b6ef5; border: 1px solid rgba(91,110,245,.2); }
+    .ex-nn   { background: #f1f3f8; color: #7a829e; border: 1px solid #dde2ee; }
+    .ex-null { background: #f1f3f8; color: #a0a8c0; border: 1px solid #dde2ee; }
+    .ex-inc  { background: rgba(13,148,136,.1); color: #0d9488; border: 1px solid rgba(13,148,136,.2); }
+
+    .ex-col-badge { display: inline-flex; width: 22px; height: 16px; border-radius: 3px;
+                    background: #e8ecf4; border: 1px solid #dde2ee; align-items: center;
+                    justify-content: center; font-size: 7px; font-weight: 700;
+                    color: #7a829e; font-family: monospace; margin-right: 4px; }
+    .ex-col-badge.pk { background: rgba(245,158,11,.12); border-color: #f59e0b; color: #f59e0b; }
+
+    .ex-rel-badge { display: inline-block; padding: 2px 8px; background: rgba(91,110,245,.08);
+                    color: #5b6ef5; border-radius: 4px; font-size: 11px; font-weight: 600; }
+
+    .ex-diagram-wrap svg { max-width: 100%; height: auto; }
+
+    @media print {
+      .ex-nav { display: none; }
+      .export-section { page-break-inside: avoid; }
+    }
+  `;
+}
+
 const CARD_W       = 180;
 const CARD_HEADER_H = 26;
 const ROW_H        = 16;

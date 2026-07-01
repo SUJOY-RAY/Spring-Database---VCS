@@ -536,6 +536,34 @@ body {
   margin-left: 8px;
 }
 
+.inner-tabbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.itb-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.itb-export-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
 .itb-sep {
   color: var(--text-light);
   font-size: 14px;
@@ -1251,26 +1279,28 @@ code.col-code {
   border-radius: 8px;
   overflow: hidden;
   position: relative;
+  margin-top: 16px;
 }
 
 .cl-changes-label {
   position: absolute;
-  top: -10px;
+  top: -11px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 1px 14px;
+  padding: 2px 16px;
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
-  z-index: 1;
+  z-index: 10000;
+  line-height: 1.6;
 }
 
 .cl-entity-list {
-  padding: 18px 0 4px;
+  padding: 20px 0 4px;
 }
 
 .cl-entity-item {
@@ -1317,12 +1347,12 @@ code.col-code {
 }
 
 .cl-sub-change {
-  font-size: 10px;
-  color: var(--text-muted);
+  font-size: 11px;
+  color: var(--text);
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 3px;
-  padding: 1px 5px;
+  padding: 2px 6px;
   font-family: 'JetBrains Mono', Consolas, monospace;
 }
 
