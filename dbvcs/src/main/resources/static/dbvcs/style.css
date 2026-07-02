@@ -543,27 +543,6 @@ body {
   gap: 8px;
 }
 
-.itb-export-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
-}
-
-.itb-export-btn:hover {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-
 .itb-sep {
   color: var(--text-light);
   font-size: 14px;
@@ -776,6 +755,13 @@ body {
   font-weight: 600;
   border: 1px solid transparent;
   white-space: nowrap;
+  cursor: help;
+  transition: filter 0.12s, box-shadow 0.12s;
+}
+
+.wiki-entity-tag[title]:hover {
+  filter: brightness(0.93);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
 }
 
 /* Tag colour themes */
