@@ -19,6 +19,11 @@ public class RelationSchema {
     /** Mapped-by value if present */
     private String mappedBy;
     private boolean optional;
+    /**
+     * The physical join column name for owning-side relations (MANY_TO_ONE, ONE_TO_ONE without mappedBy).
+     * Null for inverse-side and collection relations.
+     */
+    private String joinColumnName;
 
     public RelationSchema() {}
 
@@ -29,6 +34,16 @@ public class RelationSchema {
         this.targetEntity = targetEntity;
         this.mappedBy = mappedBy;
         this.optional = optional;
+    }
+
+    public RelationSchema(String fieldName, RelationType type, String targetEntity,
+                          String mappedBy, boolean optional, String joinColumnName) {
+        this.fieldName = fieldName;
+        this.type = type;
+        this.targetEntity = targetEntity;
+        this.mappedBy = mappedBy;
+        this.optional = optional;
+        this.joinColumnName = joinColumnName;
     }
 
     public String getFieldName() { return fieldName; }
@@ -45,4 +60,7 @@ public class RelationSchema {
 
     public boolean isOptional() { return optional; }
     public void setOptional(boolean optional) { this.optional = optional; }
+
+    public String getJoinColumnName() { return joinColumnName; }
+    public void setJoinColumnName(String joinColumnName) { this.joinColumnName = joinColumnName; }
 }

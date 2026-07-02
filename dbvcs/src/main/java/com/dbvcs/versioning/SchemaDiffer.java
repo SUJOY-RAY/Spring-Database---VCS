@@ -7,7 +7,9 @@ import com.dbvcs.model.SchemaSnapshot;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Determines whether a newly scanned schema differs from the previously saved one.
@@ -37,7 +39,7 @@ public class SchemaDiffer {
 
     /**
      * Sorts entities, fields, and relations by name so that ordering differences
-     * don't cause false positives.
+     * don't cause false positives. Metadata annotations are included in the comparison.
      */
     private List<EntitySchema> normalize(List<EntitySchema> entities) {
         return entities.stream()
@@ -45,22 +47,25 @@ public class SchemaDiffer {
                     List<FieldSchema> sortedFields = e.getFields() == null
                             ? List.of()
                             : e.getFields().stream()
-                                .sorted((a, b) -> a.getName().compareTo(b.getName()))
+                                .sorted(Comparator.comparing(FieldSchema::getName))
                                 .toList();
                     List<RelationSchema> sortedRelations = e.getRelations() == null
                             ? List.of()
                             : e.getRelations().stream()
-                                .sorted((a, b) -> a.getFieldName().compareTo(b.getFieldName()))
+                                .sorted(Comparator.comparing(RelationSchema::getFieldName))
                                 .toList();
-                    return new EntitySchema(
+                    EntitySchema normalized = new EntitySchema(
                             e.getClassName(),
                             e.getSimpleClassName(),
                             e.getTableName(),
+                            e.getComment(),
                             sortedFields,
                             sortedRelations
                     );
+                    normalized.setMetadata(e.getMetadata() != null ? e.getMetadata() : Map.of());
+                    return normalized;
                 })
-                .sorted((a, b) -> a.getClassName().compareTo(b.getClassName()))
+                .sorted(Comparator.comparing(EntitySchema::getClassName))
                 .toList();
     }
 }

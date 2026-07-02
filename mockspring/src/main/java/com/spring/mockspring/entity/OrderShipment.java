@@ -1,12 +1,30 @@
 package com.spring.mockspring.entity;
 
-import com.dbvcs.annotation.DbvcsComment;
+import com.dbvcs.annotation.*;
+import com.dbvcs.annotation.enums.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "order_shipment")
 @DbvcsComment("Tracks the shipment details for an order, including carrier, tracking number, and estimated/actual delivery timestamps.")
+@BusinessModule(name = ModuleType.SHIPPING, description = "Shipment tracking and carrier management")
+@Domain(name = DomainType.LOGISTICS, description = "Logistics and fulfilment domain")
+@Purpose(value = "Records carrier and tracking data for a fulfilled order", description = "One-to-one with Order once it reaches SHIPPED status")
+@Criticality(level = CriticalityLevel.HIGH, description = "Customer-facing; delays or errors directly impact satisfaction")
+@TableType(type = TableTypeValue.TRANSACTIONAL, description = "Shipment fulfilment record")
+@TransactionalData
+@BusinessOwner("Logistics & Fulfilment Team")
+@TechnicalOwner("Platform Engineering")
+@DataClassification(level = DataClassificationLevel.INTERNAL, description = "Internal logistics data")
+@AccessLevel(level = AccessLevelValue.INTERNAL_ONLY)
+@LawfulBasis(type = LawfulBasisType.CONTRACT, description = "Required to fulfil delivery obligation")
+@DataRetention(type = RetentionType.SEVEN_YEARS, description = "Retained with associated order")
+@Lifecycle(value = LifecycleStage.ACTIVE)
+@UpdateStrategy(value = UpdateType.UPSERT)
+@DataQualityLevel(level = QualityLevel.HIGH)
+@DataQuality(rules = {"trackingNumber must be unique", "carrier must not be null", "shippedAt must be set before deliveredAt"})
+@ApiExposed
 public class OrderShipment {
 
     public enum Carrier { UPS, FEDEX, DHL, USPS, LOCAL }
@@ -16,14 +34,20 @@ public class OrderShipment {
     private Long id;
 
     @DbvcsComment("Carrier-issued tracking number; can be used to deep-link to the carrier tracking page.")
+    @BusinessKey
+    @NaturalKey
+    @Searchable
+    @IndexedFor(purpose = "Shipment tracking lookup by customer and support agents")
     @Column(nullable = false, unique = true, length = 80)
     private String trackingNumber;
 
     @DbvcsComment("Shipping carrier responsible for delivery: UPS, FEDEX, DHL, USPS, or LOCAL courier.")
+    @Searchable
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Carrier carrier = Carrier.LOCAL;
 
+    @DbvcsComment("Timestamp when the shipment was dispatched by the warehouse.")
     @Column(nullable = false)
     private LocalDateTime shippedAt = LocalDateTime.now();
 
@@ -34,6 +58,7 @@ public class OrderShipment {
     private LocalDateTime deliveredAt;
 
     @DbvcsComment("Free-text field for internal handling notes or special delivery instructions.")
+    @DataClassification(level = DataClassificationLevel.INTERNAL)
     @Column(length = 255)
     private String notes;
 

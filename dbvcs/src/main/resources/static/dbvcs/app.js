@@ -165,19 +165,54 @@ document.getElementById('btn-group-schema').addEventListener('click', () => {
 });
 
 // ── Schema / group derivation ─────────────────────────────
-// Group by the first segment of the table name when split by "_".
-// e.g. "order_items" → "order", "order_list" → "order", "users" → "users"
+// ── Group / module derivation ─────────────────────────────
+// Reads the @BusinessModule annotation value from entity metadata.
+// Falls back to domain, then table prefix, then "other".
 function deriveGroup(entity) {
+  const meta = entity.metadata || {};
+  if (meta['module.name'])  return meta['module.name'].toLowerCase();
+  if (meta['domain.name'])  return meta['domain.name'].toLowerCase();
+  // Last-resort: first segment of table name (legacy fallback)
   const tbl = entity.tableName || '';
-  return tbl.split('_')[0] || 'default';
+  return tbl.split('_')[0] || 'other';
 }
 
-// Full qualified label shown in sidebar: "order.order_items"
+// Reads @Submodule name from metadata. Returns empty string if absent.
+function deriveSubgroup(entity) {
+  return (entity.metadata || {})['submodule.name'] || '';
+}
+
+// Reads @Domain name from metadata.
+function deriveDomain(entity) {
+  return (entity.metadata || {})['domain.name'] || '';
+}
+
+// Reads @Criticality level from metadata.
+function deriveCriticality(entity) {
+  return (entity.metadata || {})['criticality.level'] || '';
+}
+
+// Human-readable group label: prefer module description, else title-case the key.
+// Accepts the full entity list for that group to find the description.
+function deriveGroupLabel(groupName, groupEntities) {
+  const ent = (groupEntities || []).find(e => {
+    const meta = e.metadata || {};
+    return (meta['module.name'] || '').toLowerCase() === groupName
+        && meta['module.description'];
+  });
+  if (ent) return ent.metadata['module.description'];
+  return groupName.charAt(0).toUpperCase() + groupName.slice(1);
+}
+
+// Full qualified label shown in sidebar: "MODULE · submodule · table_name"
 function qualifiedLabel(entity) {
-  return `${deriveGroup(entity)}.${entity.tableName}`;
+  const mod = deriveGroup(entity);
+  const sub = deriveSubgroup(entity);
+  return sub ? `${mod} · ${sub.toLowerCase()} · ${entity.tableName}`
+             : `${mod} · ${entity.tableName}`;
 }
 
-// Keep backward compat — deriveSchema now returns the group name
+// Alias kept for call sites
 function deriveSchema(entity) { return deriveGroup(entity); }
 
 function renderSidebar() {
@@ -297,9 +332,47 @@ function getTypeAbbr(javaType) {
 
 // ── Field tooltip ─────────────────────────────────────────
 function showFieldTooltip(ev, field) {
-  tooltipFieldName.textContent = `Field ${field.name}`;
-  tooltipFieldType.textContent = `Type ${field.javaType}`;
-  tooltipFieldDesc.textContent = field.comment ? field.comment : generateFieldDesc(field);
+  tooltipFieldName.textContent = field.columnName || field.name;
+  tooltipFieldType.textContent = `${mapSqlType(field.javaType)}  ·  ${field.javaType}`;
+  // Description line
+  const descText = field.comment ? field.comment : generateFieldDesc(field);
+  tooltipFieldDesc.textContent = descText;
+
+  // Metadata pills inside tooltip
+  let existingMeta = fieldTooltip.querySelector('.tooltip-meta');
+  if (existingMeta) existingMeta.remove();
+
+  const meta = field.metadata || {};
+  const metaKeys = Object.keys(meta);
+  if (metaKeys.length > 0) {
+    const metaDiv = document.createElement('div');
+    metaDiv.className = 'tooltip-meta';
+    // Show first 4 most relevant meta entries
+    const priority = ['pii','encrypted.algorithm','masking.strategy','piiCategory.type',
+      'dataClassification.level','accessLevel.level','businessKey','naturalKey',
+      'searchable','lawfulBasis.type','consentRequired','legalHold'];
+    const shown = [...priority.filter(k => meta[k]), ...metaKeys.filter(k => !priority.includes(k))].slice(0, 5);
+    shown.forEach(k => {
+      const val = meta[k];
+      const chip = document.createElement('span');
+      chip.className = 'tooltip-meta-chip';
+      const labelMap = {
+        'pii': 'PII', 'encrypted.algorithm': 'Encrypted', 'masking.strategy': 'Masking',
+        'piiCategory.type': 'PII Type', 'dataClassification.level': 'Classification',
+        'accessLevel.level': 'Access', 'businessKey': 'Business Key', 'naturalKey': 'Natural Key',
+        'searchable': 'Searchable', 'lawfulBasis.type': 'Lawful Basis',
+        'consentRequired': 'Consent', 'legalHold': 'Legal Hold',
+        'derivedFrom': 'From', 'derived.expression': 'Expr',
+        'indexedFor.purpose': 'Index', 'apiExposed': 'API', 'publicApi': 'Public API',
+        'dataQualityLevel': 'Quality', 'remarks': 'Note'
+      };
+      const lbl = labelMap[k] || k.replace(/\./g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+      chip.textContent = val === 'true' ? lbl : `${lbl}: ${val}`;
+      metaDiv.appendChild(chip);
+    });
+    fieldTooltip.appendChild(metaDiv);
+  }
+
   fieldTooltip.classList.remove('hidden');
   positionTooltip(ev);
 }
@@ -355,6 +428,7 @@ function renderWikiPage(entity) {
   const fields = entity.fields || [];
   const relations = entity.relations || [];
   const schemaName = deriveSchema(entity);
+  const tags = entity.tags || [];
 
   let html = '';
 
@@ -368,11 +442,22 @@ function renderWikiPage(entity) {
     <span>${entity.tableName}</span>
   </div>`;
 
+  // Deprecated banner
+  if (entity.deprecated) {
+    const since = (entity.metadata || {})['deprecatedSince.version'] || '';
+    const replacement = (entity.metadata || {})['deprecatedSince.replacement'] || '';
+    html += `<div class="wiki-deprecated-banner">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>This table is <strong>deprecated</strong>${since ? ' since version ' + escapeHtml(since) : ''}.${replacement ? ' Use <strong>' + escapeHtml(replacement) + '</strong> instead.' : ''}</span>
+    </div>`;
+  }
+
   // Page header
   html += `<div class="wiki-page-header">
     <div class="wiki-page-title">
       <div class="wiki-table-icon">T</div>
       <h1>${entity.tableName} Table</h1>
+      ${entity.criticalityLevel ? `<span class="wiki-criticality-badge wiki-criticality-${entity.criticalityLevel.toLowerCase()}">${entity.criticalityLevel}</span>` : ''}
     </div>
     <div class="wiki-page-meta">
       <div class="wiki-meta-item">
@@ -385,7 +470,10 @@ function renderWikiPage(entity) {
       <div class="wiki-meta-item">
         <span>${relations.length} relations</span>
       </div>
+      ${entity.lifecycleStage ? `<div class="wiki-meta-item"><span class="wiki-lifecycle-badge wiki-lifecycle-${entity.lifecycleStage.toLowerCase()}">${entity.lifecycleStage}</span></div>` : ''}
+      ${entity.dataClassification ? `<div class="wiki-meta-item"><span class="wiki-classification-badge">${entity.dataClassification}</span></div>` : ''}
     </div>
+    ${tags.length > 0 ? `<div class="wiki-entity-tags">${tags.map(t => `<span class="wiki-entity-tag wiki-tag-${tagClass(t)}">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
   </div>`;
 
   // Description
@@ -397,6 +485,15 @@ function renderWikiPage(entity) {
     <h2>${entity.simpleClassName} Table</h2>
     <p>${tableDesc}</p>
   </div>`;
+
+  // Entity-level metadata panel
+  const entityMeta = entity.metadata || {};
+  if (Object.keys(entityMeta).length > 0) {
+    html += `<div class="wiki-section">
+      <h3>Metadata Annotations</h3>
+      ${buildEntityMetaPanel(entityMeta)}
+    </div>`;
+  }
 
   // Insert code example
   html += `<div class="wiki-section">
@@ -468,6 +565,168 @@ function toggleFieldsTable(headerEl) {
   wrap.style.display = isOpen ? 'none' : '';
 }
 
+// ── Entity-level metadata panel ───────────────────────────
+/**
+ * Renders a structured two-column grid of all entity-level metadata annotations.
+ * Groups related keys into logical categories with a heading per category.
+ */
+function buildEntityMetaPanel(meta) {
+  const categories = [
+    {
+      label: 'Business',
+      icon: '🏢',
+      rows: [
+        row(meta, 'module.name',        'Module',        'module.description'),
+        row(meta, 'submodule.name',     'Submodule',     'submodule.description'),
+        row(meta, 'domain.name',        'Domain',        'domain.description'),
+        row(meta, 'purpose.value',      'Purpose',       'purpose.description'),
+        row(meta, 'criticality.level',  'Criticality',   'criticality.description'),
+      ]
+    },
+    {
+      label: 'Ownership',
+      icon: '👤',
+      rows: [
+        row(meta, 'businessOwner',  'Business Owner'),
+        row(meta, 'technicalOwner', 'Technical Owner'),
+        row(meta, 'dataSteward',    'Data Steward'),
+      ]
+    },
+    {
+      label: 'Table Classification',
+      icon: '🗄️',
+      rows: [
+        row(meta, 'tableType.type',        'Table Type',    'tableType.description'),
+        row(meta, 'masterData',            'Master Data'),
+        row(meta, 'transactionalData',     'Transactional'),
+        row(meta, 'lookupTable',           'Lookup Table'),
+        row(meta, 'referenceData',         'Reference Data'),
+      ]
+    },
+    {
+      label: 'Integration',
+      icon: '🔗',
+      rows: [
+        row(meta, 'sourceSystem.name', 'Source System', 'sourceSystem.description'),
+        row(meta, 'integration',       'Integration'),
+        row(meta, 'derivedFrom',       'Derived From'),
+        row(meta, 'derived.expression','Expression'),
+      ]
+    },
+    {
+      label: 'Data Classification',
+      icon: '🔒',
+      rows: [
+        row(meta, 'dataClassification.level', 'Classification', 'dataClassification.description'),
+        row(meta, 'accessLevel.level',         'Access Level'),
+      ]
+    },
+    {
+      label: 'Privacy & Compliance',
+      icon: '🛡️',
+      rows: [
+        row(meta, 'pii',              'PII'),
+        row(meta, 'piiCategory.type', 'PII Category',   'piiCategory.description'),
+        row(meta, 'spd',              'Sensitive Data'),
+        row(meta, 'containsChildrenData', 'Children Data'),
+        row(meta, 'lawfulBasis.type', 'Lawful Basis',   'lawfulBasis.description'),
+        row(meta, 'consentRequired',  'Consent Required'),
+        row(meta, 'legalHold',        'Legal Hold'),
+      ]
+    },
+    {
+      label: 'Security',
+      icon: '🔐',
+      rows: [
+        row(meta, 'encrypted.algorithm', 'Encryption'),
+        row(meta, 'masking.strategy',     'Masking'),
+      ]
+    },
+    {
+      label: 'Lifecycle',
+      icon: '📅',
+      rows: [
+        row(meta, 'retention.type',          'Retention',        'retention.description'),
+        row(meta, 'lifecycle',               'Lifecycle Stage'),
+        row(meta, 'deprecatedSince.version', 'Deprecated Since', 'deprecatedSince.replacement'),
+      ]
+    },
+    {
+      label: 'Operations',
+      icon: '⚙️',
+      rows: [
+        row(meta, 'refreshFrequency', 'Refresh Frequency'),
+        row(meta, 'updateStrategy',   'Update Strategy'),
+        row(meta, 'versioned',        'Versioned'),
+        row(meta, 'auditable',        'Auditable'),
+        row(meta, 'auditColumns.createdBy', 'Audit: createdBy'),
+        row(meta, 'auditColumns.updatedBy', 'Audit: updatedBy'),
+        row(meta, 'auditColumns.createdAt', 'Audit: createdAt'),
+        row(meta, 'auditColumns.updatedAt', 'Audit: updatedAt'),
+      ]
+    },
+    {
+      label: 'Data Quality',
+      icon: '✅',
+      rows: [
+        row(meta, 'dataQuality.rules', 'Quality Rules'),
+        row(meta, 'dataQualityLevel',  'Quality Level'),
+      ]
+    },
+    {
+      label: 'API',
+      icon: '🌐',
+      rows: [
+        row(meta, 'apiExposed', 'API Exposed'),
+        row(meta, 'publicApi',  'Public API'),
+      ]
+    },
+    {
+      label: 'Notes',
+      icon: '📝',
+      rows: [
+        row(meta, 'remarks', 'Remarks'),
+      ]
+    },
+  ];
+
+  // Only render categories that have at least one populated row
+  const activeCats = categories.map(cat => ({
+    ...cat,
+    rows: cat.rows.filter(r => r !== null)
+  })).filter(cat => cat.rows.length > 0);
+
+  if (activeCats.length === 0) return '<p style="color:var(--text-muted);font-size:13px">No metadata annotations present.</p>';
+
+  let html = '<div class="meta-panel">';
+  activeCats.forEach(cat => {
+    html += `<div class="meta-category">
+      <div class="meta-category-header">
+        <span class="meta-category-icon">${cat.icon}</span>
+        <span class="meta-category-label">${cat.label}</span>
+      </div>
+      <div class="meta-rows">`;
+    cat.rows.forEach(({ label, value, desc }) => {
+      const displayVal = value === 'true' ? '✓ Yes' : escapeHtml(value);
+      const descHtml = desc ? `<span class="meta-row-desc">${escapeHtml(desc)}</span>` : '';
+      html += `<div class="meta-row">
+        <span class="meta-row-label">${escapeHtml(label)}</span>
+        <span class="meta-row-value">${displayVal}${descHtml}</span>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+/** Returns { label, value, desc } if the key exists in meta, otherwise null. */
+function row(meta, key, label, descKey) {
+  const val = meta[key];
+  if (val === undefined || val === null || val === '') return null;
+  return { label, value: String(val), desc: descKey ? meta[descKey] || '' : '' };
+}
+
 // ── Wiki helper builders ───────────────────────────────────
 function generateTableDesc(entity) {
   const name = entity.tableName.replace(/_/g, ' ');
@@ -498,42 +757,163 @@ function buildFieldsTable(entity) {
   const fields = entity.fields || [];
   const relations = entity.relations || [];
 
-  // Build FK map: which fields are foreign keys from relations
-  const fkTargets = {};
-  relations.forEach(r => {
-    if (r.type === 'MANY_TO_ONE' || r.type === 'ONE_TO_ONE') {
-      fkTargets[r.fieldName] = r.targetEntity;
-    }
+  // Owning-side relations (MANY_TO_ONE, ONE_TO_ONE without mappedBy) — these are real FK columns
+  const owningSideRels = relations.filter(r =>
+    (r.type === 'MANY_TO_ONE' || r.type === 'ONE_TO_ONE') && r.joinColumnName
+  );
+
+  // Map joinColumnName → relation, for quick lookup when rendering fields
+  const joinColMap = {};
+  owningSideRels.forEach(r => {
+    joinColMap[r.joinColumnName] = r;
   });
 
+  // Also map fieldName → relation (fallback for any field whose name matches)
+  const fieldNameMap = {};
+  owningSideRels.forEach(r => { fieldNameMap[r.fieldName] = r; });
+
   let rows = '';
+
+  // ── Regular columns ──────────────────────────────────────
   fields.forEach(f => {
-    const tags = buildTags(f, fkTargets[f.name]);
-    const refs = buildRefs(entity, f, fkTargets[f.name]);
+    // Check if this field corresponds to a FK join column
+    const rel = joinColMap[f.columnName] || joinColMap[f.name]
+              || fieldNameMap[f.name] || null;
+    const isFk = !!rel;
+
+    const tags  = buildTags(f, isFk);
+    const refs  = buildRefs(entity, f, rel ? rel.targetEntity : null, rel);
+    const desc  = f.comment ? escapeHtml(f.comment) : generateFieldDesc(f);
+    const metaHtml = buildFieldMetaBadges(f.metadata);
+
     rows += `<tr>
       <td><div class="col-name">
         <div class="col-icon ${f.id ? 'pk' : ''}">${f.id ? 'PK' : getTypeAbbr(f.javaType)}</div>
-        <span>${f.columnName || f.name}</span>
+        <div>
+          <div style="font-weight:500">${escapeHtml(f.columnName || f.name)}</div>
+          ${f.name !== (f.columnName || f.name) ? `<div style="font-size:10px;color:var(--text-light);font-style:italic">${escapeHtml(f.name)}</div>` : ''}
+        </div>
       </div></td>
-      <td><code class="col-code">${mapSqlType(f.javaType)}</code></td>
+      <td><code class="col-code">${mapSqlType(f.javaType)}</code><div style="font-size:10px;color:var(--text-light);margin-top:2px">${escapeHtml(f.javaType)}</div></td>
       <td>${tags}</td>
       <td>${refs}</td>
-      <td style="color:var(--text-muted);font-size:12px">${f.comment ? escapeHtml(f.comment) : generateFieldDesc(f)}</td>
-      <td style="color:var(--text-muted);font-size:11px;white-space:nowrap">+ now</td>
+      <td>
+        <div class="field-desc-cell">
+          <span class="field-desc-text">${desc}</span>
+          ${metaHtml}
+        </div>
+      </td>
+    </tr>`;
+  });
+
+  // ── FK join columns (owning-side relations not already in fields[]) ──────
+  // These are the physical *_id columns that JPA maps as relation fields
+  owningSideRels.forEach(r => {
+    const colName = r.joinColumnName;
+    // Skip if the fields list already contains a field with this column name
+    const alreadyCovered = fields.some(f => (f.columnName || f.name) === colName);
+    if (alreadyCovered) return;
+
+    const targetEntity = schema ? schema.entities.find(e => e.simpleClassName === r.targetEntity) : null;
+    const targetTable  = targetEntity ? targetEntity.tableName : r.targetEntity.toLowerCase() + 's';
+    const refHtml = `<a class="ref-link" data-target="${r.targetEntity}">
+      <span class="ref-arrow">→</span> ${targetTable}.id
+    </a>`;
+    const tags = '<span class="tag tag-fk">FK</span>'
+               + (r.optional ? '<span class="tag tag-null">null</span>' : '<span class="tag tag-nn">NOT NULL</span>');
+
+    rows += `<tr>
+      <td><div class="col-name">
+        <div class="col-icon" style="background:var(--accent-light);color:var(--accent);border-color:rgba(91,110,245,0.25)">FK</div>
+        <div>
+          <div style="font-weight:500">${escapeHtml(colName)}</div>
+          <div style="font-size:10px;color:var(--text-light);font-style:italic">${escapeHtml(r.fieldName)}</div>
+        </div>
+      </div></td>
+      <td><code class="col-code">bigint</code><div style="font-size:10px;color:var(--text-light);margin-top:2px">Long</div></td>
+      <td>${tags}</td>
+      <td>${refHtml}</td>
+      <td><div class="field-desc-cell">
+        <span class="field-desc-text">Foreign key → ${targetTable}</span>
+      </div></td>
     </tr>`;
   });
 
   return `<table class="wiki-table">
     <thead><tr>
-      <th>Name</th>
+      <th>Column</th>
       <th>Type</th>
-      <th>Settings</th>
+      <th>Constraints</th>
       <th>References</th>
-      <th>Default Value &amp; Notes</th>
-      <th>Last Updated</th>
+      <th>Description &amp; Metadata</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
+}
+
+/**
+ * Renders a compact set of metadata badge pills from a field's metadata map.
+ * Groups related keys (e.g. piiCategory.type + piiCategory.description) into one pill.
+ */
+function buildFieldMetaBadges(metadata) {
+  if (!metadata || Object.keys(metadata).length === 0) return '';
+
+  const pills = [];
+
+  // Helper: get a value and its paired description
+  const get = (k) => metadata[k];
+
+  // Privacy
+  if (get('pii'))                pills.push(metaPill('PII', get('pii') === 'true' ? '' : get('pii'), 'pii'));
+  if (get('piiCategory.type'))   pills.push(metaPill('PII Category', formatMetaVal('piiCategory.type', get('piiCategory.type'), get('piiCategory.description')), 'pii'));
+  if (get('spd'))                pills.push(metaPill('SPD', get('spd') === 'true' ? '' : get('spd'), 'privacy'));
+  if (get('consentRequired'))    pills.push(metaPill('Consent Required', get('consentRequired') === 'true' ? '' : get('consentRequired'), 'privacy'));
+  if (get('legalHold'))          pills.push(metaPill('Legal Hold', get('legalHold') === 'true' ? '' : get('legalHold'), 'warn'));
+  if (get('containsChildrenData')) pills.push(metaPill('Children Data', get('containsChildrenData') === 'true' ? '' : get('containsChildrenData'), 'warn'));
+  if (get('lawfulBasis.type'))   pills.push(metaPill('Lawful Basis', formatMetaVal('lawfulBasis.type', get('lawfulBasis.type'), get('lawfulBasis.description')), 'privacy'));
+
+  // Security
+  if (get('encrypted.algorithm')) pills.push(metaPill('Encrypted', get('encrypted.algorithm'), 'security'));
+  if (get('masking.strategy'))    pills.push(metaPill('Masking', get('masking.strategy'), 'security'));
+
+  // Classification
+  if (get('dataClassification.level')) pills.push(metaPill('Classification', formatMetaVal('dataClassification.level', get('dataClassification.level'), get('dataClassification.description')), 'class'));
+  if (get('accessLevel.level'))        pills.push(metaPill('Access', get('accessLevel.level'), 'class'));
+
+  // Integration / derivation
+  if (get('sourceSystem.name')) pills.push(metaPill('Source', formatMetaVal('sourceSystem.name', get('sourceSystem.name'), get('sourceSystem.description')), 'integration'));
+  if (get('derivedFrom'))       pills.push(metaPill('Derived From', get('derivedFrom'), 'integration'));
+  if (get('derived.expression'))pills.push(metaPill('Expression', get('derived.expression'), 'integration'));
+
+  // Data quality / modeling
+  if (get('dataQuality.rules'))  pills.push(metaPill('Quality Rules', get('dataQuality.rules'), 'quality'));
+  if (get('dataQualityLevel'))   pills.push(metaPill('Quality Level', get('dataQualityLevel'), 'quality'));
+  if (get('businessKey'))        pills.push(metaPill('Business Key', '', 'modeling'));
+  if (get('naturalKey'))         pills.push(metaPill('Natural Key', '', 'modeling'));
+  if (get('searchable'))         pills.push(metaPill('Searchable', '', 'modeling'));
+  if (get('indexedFor.purpose')) pills.push(metaPill('Indexed For', get('indexedFor.purpose'), 'modeling'));
+
+  // API
+  if (get('apiExposed')) pills.push(metaPill('API Exposed', '', 'api'));
+  if (get('publicApi'))  pills.push(metaPill('Public API', '', 'api'));
+
+  // Misc
+  if (get('remarks')) pills.push(metaPill('Remark', get('remarks'), 'remark'));
+
+  if (pills.length === 0) return '';
+  return `<div class="field-meta-badges">${pills.join('')}</div>`;
+}
+
+function formatMetaVal(key, value, desc) {
+  return desc ? `${value} — ${desc}` : value;
+}
+
+function metaPill(label, value, type) {
+  const typeClass = `meta-pill--${type}`;
+  const valueHtml = value ? `<span class="meta-pill-val">${escapeHtml(value)}</span>` : '';
+  return `<span class="meta-pill ${typeClass}" title="${escapeHtml(label)}${value ? ': ' + value : ''}">
+    <span class="meta-pill-label">${escapeHtml(label)}</span>${valueHtml}
+  </span>`;
 }
 
 function buildTags(field, isFk) {
@@ -548,33 +928,40 @@ function buildTags(field, isFk) {
   return tags || '—';
 }
 
-function buildRefs(entity, field, fkTarget) {
+function buildRefs(entity, field, fkTarget, relation) {
+  const colName = field.columnName || field.name;
+
   if (!fkTarget) {
-    // Check if other entities reference this field
+    // This is not an FK field — check if other entities point TO this entity's columns
     const refs = [];
     if (schema) {
       schema.entities.forEach(e => {
         if (e.simpleClassName === entity.simpleClassName) return;
         (e.relations || []).forEach(r => {
-          if (r.targetEntity === entity.simpleClassName &&
-              (r.type === 'MANY_TO_ONE' || r.type === 'ONE_TO_ONE')) {
-            refs.push({ entity: e.simpleClassName, table: e.tableName });
+          // Only owning-side relations with a real join column pointing to this entity
+          if (r.targetEntity === entity.simpleClassName
+              && (r.type === 'MANY_TO_ONE' || r.type === 'ONE_TO_ONE')
+              && !r.mappedBy) {
+            refs.push({ entity: e.simpleClassName, table: e.tableName, col: r.joinColumnName || (r.fieldName + '_id') });
           }
         });
       });
     }
-    if (refs.length === 0) return '—';
-    const shown = refs.slice(0, 2);
+    // Only show the reference on the PK row (id field)
+    if (!field.id || refs.length === 0) return '—';
+    const shown = refs.slice(0, 3);
     let html = shown.map(r =>
       `<div><a class="ref-link" data-target="${r.entity}">
-        <span class="ref-arrow">↔</span> ${r.table}.${field.columnName || field.name}
+        <span class="ref-arrow">←</span> ${r.table}.${r.col}
       </a></div>`
     ).join('');
-    if (refs.length > 2) html += `<div style="color:var(--text-muted);font-size:11px">+${refs.length-2} more</div>`;
+    if (refs.length > 3) html += `<div style="color:var(--text-muted);font-size:11px">+${refs.length - 3} more</div>`;
     return html;
   }
-  const targetEntity = schema.entities.find(e => e.simpleClassName === fkTarget);
-  const targetTable = targetEntity ? targetEntity.tableName : fkTarget.toLowerCase() + 's';
+
+  // This field (or the FK row) points to another entity
+  const targetEntity = schema ? schema.entities.find(e => e.simpleClassName === fkTarget) : null;
+  const targetTable  = targetEntity ? targetEntity.tableName : fkTarget.toLowerCase() + 's';
   return `<a class="ref-link" data-target="${fkTarget}">
     <span class="ref-arrow">→</span> ${targetTable}.id
   </a>`;
@@ -723,19 +1110,34 @@ function renderSystemWiki() {
     <h3>All Tables (${entities.length})</h3>
     <table class="wiki-table">
       <thead><tr>
-        <th>Table</th><th>Class</th><th>Fields</th><th>Relations</th><th>Description</th>
+        <th>Table</th><th>Class</th><th>Fields</th><th>Relations</th><th>Classification</th><th>Tags</th><th>Description</th>
       </tr></thead>
       <tbody>
-        ${entities.map(e => `<tr onclick="selectTable('${e.simpleClassName}')" style="cursor:pointer">
-          <td><div class="col-name">
-            <div class="col-icon" style="background:var(--accent-light);color:var(--accent);border-color:rgba(91,110,245,0.2)">T</div>
-            <span>${e.tableName}</span>
-          </div></td>
-          <td style="color:var(--text-muted);font-size:12px">${e.simpleClassName}</td>
-          <td style="color:var(--text-muted)">${(e.fields||[]).length}</td>
-          <td style="color:var(--text-muted)">${(e.relations||[]).length}</td>
-          <td style="color:var(--text-muted);font-size:12px">${e.comment ? escapeHtml(e.comment.substring(0,80)) + (e.comment.length>80?'…':'') : '—'}</td>
-        </tr>`).join('')}
+        ${entities.map(e => {
+          const eTags = e.tags || [];
+          const tagsHtml = eTags.length > 0
+            ? eTags.slice(0, 4).map(t => `<span class="wiki-entity-tag wiki-tag-${tagClass(t)}" style="font-size:10px;padding:1px 6px">${escapeHtml(t)}</span>`).join('')
+              + (eTags.length > 4 ? `<span style="color:var(--text-light);font-size:10px">+${eTags.length - 4}</span>` : '')
+            : '—';
+          const classHtml = e.dataClassification
+            ? `<span class="wiki-classification-badge" style="font-size:10px">${escapeHtml(e.dataClassification)}</span>`
+            : '—';
+          return `<tr onclick="selectTable('${e.simpleClassName}')" style="cursor:pointer">
+            <td><div class="col-name">
+              <div class="col-icon" style="background:var(--accent-light);color:var(--accent);border-color:rgba(91,110,245,0.2)">T</div>
+              <div>
+                <span>${e.tableName}</span>
+                ${e.deprecated ? '<span style="font-size:9px;color:var(--danger);font-weight:600;margin-left:4px">DEPRECATED</span>' : ''}
+              </div>
+            </div></td>
+            <td style="color:var(--text-muted);font-size:12px">${e.simpleClassName}</td>
+            <td style="color:var(--text-muted)">${(e.fields||[]).length}</td>
+            <td style="color:var(--text-muted)">${(e.relations||[]).length}</td>
+            <td>${classHtml}</td>
+            <td><div style="display:flex;flex-wrap:wrap;gap:3px">${tagsHtml}</div></td>
+            <td style="color:var(--text-muted);font-size:12px">${e.comment ? escapeHtml(e.comment.substring(0,80)) + (e.comment.length>80?'…':'') : '—'}</td>
+          </tr>`;
+        }).join('')}
       </tbody>
     </table>
   </div>`;
@@ -1384,6 +1786,23 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;');
 }
 
+/**
+ * Maps a tag string to a CSS modifier class for coloring.
+ */
+function tagClass(tag) {
+  const t = (tag || '').toLowerCase().replace(/\s+/g, '-');
+  const map = {
+    'pii': 'pii', 'spd': 'pii', 'children-data': 'pii',
+    'consent-required': 'privacy', 'legal-hold': 'privacy',
+    'encrypted': 'security', 'masked': 'security',
+    'master-data': 'type', 'transactional': 'type', 'lookup': 'type', 'reference-data': 'type',
+    'auditable': 'ops', 'versioned': 'ops',
+    'api-exposed': 'api', 'public-api': 'api',
+    'deprecated': 'deprecated'
+  };
+  return map[t] || 'default';
+}
+
 function viewVersion(version) {
   versionSelect.value = version;
   loadVersion(version).then(() => {
@@ -1842,23 +2261,56 @@ const CARD_GAP_X   = 16;   // gap between cards inside a group
 const CARD_GAP_Y   = 14;   // gap between card rows inside a group
 const COLS_PER_GROUP = 2;  // cards per row inside a group
 
-// Group palette: [header bg, group bg, border]
-const GROUP_COLORS = {
-  order:    ['#d94f3d', 'rgba(217,79,61,0.08)',  '#d94f3d'],
-  product:  ['#3a7d44', 'rgba(58,125,68,0.08)',  '#3a7d44'],
-  user:     ['#5b6ef5', 'rgba(91,110,245,0.08)', '#5b6ef5'],
-  address:  ['#5b6ef5', 'rgba(91,110,245,0.08)', '#5b6ef5'],
-  review:   ['#8b5cf6', 'rgba(139,92,246,0.08)', '#8b5cf6'],
-  category: ['#0d9488', 'rgba(13,148,136,0.08)', '#0d9488'],
-};
-const DEFAULT_COLOR = ['#6b7a9b', 'rgba(107,122,155,0.08)', '#6b7a9b'];
+// ── Group colour palette ──────────────────────────────────
+// Colors are derived programmatically from the group name using a hash,
+// so any new @BusinessModule / @Domain value automatically gets a stable,
+// visually distinct color — no hardcoded map needed.
 
-function groupColor(groupName) {
-  return GROUP_COLORS[groupName] || DEFAULT_COLOR;
+// A curated palette of hues (in HSL) that are visually distinct and
+// look good as card headers on a light background.
+const PALETTE_HUES = [
+  215,  // blue      — customer / auth
+  10,   // red       — order
+  145,  // green     — product / inventory
+  45,   // amber     — payment / finance
+  175,  // teal      — shipping / logistics
+  275,  // purple    — notification / review
+  0,    // crimson   — security / compliance
+  235,  // indigo    — reporting / analytics
+  30,   // orange    — admin
+  190,  // cyan      — other
+  320,  // pink
+  90,   // lime
+];
+
+/** Stable numeric hash of a string (djb2). */
+function hashStr(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h) ^ str.charCodeAt(i);
+    h = h >>> 0; // keep unsigned 32-bit
+  }
+  return h;
 }
 
-function groupLabel(groupName) {
-  return groupName.charAt(0).toUpperCase() + groupName.slice(1) + ' Management';
+/**
+ * Returns [headerBg, groupBgFill, borderColor] for any group name.
+ * Colors are derived deterministically so the same module always
+ * gets the same color across page reloads and schema versions.
+ */
+function groupColor(groupName) {
+  const key   = (groupName || 'other').toLowerCase().trim();
+  const idx   = hashStr(key) % PALETTE_HUES.length;
+  const hue   = PALETTE_HUES[idx];
+  const hdr   = `hsl(${hue}, 52%, 38%)`;
+  const bg    = `hsla(${hue}, 52%, 38%, 0.07)`;
+  const border= `hsl(${hue}, 52%, 45%)`;
+  return [hdr, bg, border];
+}
+
+// Uses module description from the entity list when available
+function groupLabel(groupName, groupEntities) {
+  return deriveGroupLabel(groupName, groupEntities);
 }
 
 function cardHeight(entity) {

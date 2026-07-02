@@ -759,6 +759,107 @@ body {
   flex-shrink: 0;
 }
 
+/* ── Entity tag strip (page header) ── */
+.wiki-entity-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.wiki-entity-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+/* Tag colour themes */
+.wiki-tag-pii        { background: rgba(239,68,68,0.10);  color: #ef4444; border-color: rgba(239,68,68,0.25); }
+.wiki-tag-privacy    { background: rgba(139,92,246,0.10); color: var(--purple); border-color: rgba(139,92,246,0.25); }
+.wiki-tag-security   { background: rgba(13,148,136,0.10); color: var(--teal); border-color: rgba(13,148,136,0.25); }
+.wiki-tag-type       { background: rgba(91,110,245,0.08); color: var(--accent); border-color: rgba(91,110,245,0.2); }
+.wiki-tag-ops        { background: rgba(34,197,94,0.10);  color: #16a34a; border-color: rgba(34,197,94,0.25); }
+.wiki-tag-api        { background: rgba(245,158,11,0.10); color: #d97706; border-color: rgba(245,158,11,0.25); }
+.wiki-tag-deprecated { background: rgba(239,68,68,0.10);  color: #ef4444; border-color: rgba(239,68,68,0.3); text-decoration: line-through; }
+.wiki-tag-default    { background: var(--surface2); color: var(--text-muted); border-color: var(--border); }
+
+/* ── Criticality badge (inline with title h1) ── */
+.wiki-criticality-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.wiki-criticality-low      { background: rgba(34,197,94,0.10);  color: #16a34a; border-color: rgba(34,197,94,0.3); }
+.wiki-criticality-medium   { background: rgba(245,158,11,0.10); color: #d97706; border-color: rgba(245,158,11,0.3); }
+.wiki-criticality-high     { background: rgba(239,68,68,0.12);  color: #ef4444; border-color: rgba(239,68,68,0.3); }
+.wiki-criticality-critical { background: rgba(239,68,68,0.18);  color: #b91c1c; border-color: rgba(185,28,28,0.4); }
+
+/* ── Lifecycle stage badge ── */
+.wiki-lifecycle-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid;
+}
+
+.wiki-lifecycle-active     { background: rgba(34,197,94,0.10);  color: #16a34a; border-color: rgba(34,197,94,0.3); }
+.wiki-lifecycle-deprecated { background: rgba(239,68,68,0.10);  color: #ef4444; border-color: rgba(239,68,68,0.3); }
+.wiki-lifecycle-archived   { background: rgba(107,114,128,0.10); color: #6b7280; border-color: rgba(107,114,128,0.3); }
+.wiki-lifecycle-legacy     { background: rgba(245,158,11,0.10); color: #d97706; border-color: rgba(245,158,11,0.3); }
+
+/* ── Data classification badge ── */
+.wiki-classification-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(91,110,245,0.08);
+  color: var(--accent);
+  border: 1px solid rgba(91,110,245,0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Deprecated banner ── */
+.wiki-deprecated-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 32px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  background: rgba(239,68,68,0.06);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 6px;
+  font-size: 13px;
+  color: #b91c1c;
+  line-height: 1.5;
+}
+
+.wiki-deprecated-banner svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #ef4444;
+}
+
 /* Wiki sections */
 .wiki-section {
   padding: 24px 32px;
@@ -1446,3 +1547,168 @@ code.col-code {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-light); }
+
+/* ===== Entity Metadata Panel ===== */
+.meta-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.meta-category {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.meta-category-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.meta-category-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.meta-rows {
+  padding: 2px 0;
+}
+
+.meta-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.meta-row:last-child {
+  border-bottom: none;
+}
+
+.meta-row-label {
+  flex-shrink: 0;
+  min-width: 110px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+
+.meta-row-value {
+  color: var(--text);
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  word-break: break-word;
+}
+
+.meta-row-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* ===== Field metadata badges (inside fields table) ===== */
+.field-desc-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field-desc-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.field-meta-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: default;
+  border: 1px solid transparent;
+}
+
+.meta-pill-label {
+  opacity: 0.85;
+}
+
+.meta-pill-val {
+  font-weight: 400;
+  opacity: 0.95;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Pill colour themes */
+.meta-pill--pii      { background: rgba(239,68,68,0.10);  color: #ef4444; border-color: rgba(239,68,68,0.25); }
+.meta-pill--privacy  { background: rgba(139,92,246,0.10); color: var(--purple); border-color: rgba(139,92,246,0.25); }
+.meta-pill--warn     { background: rgba(245,158,11,0.12); color: var(--warning); border-color: rgba(245,158,11,0.3); }
+.meta-pill--security { background: rgba(13,148,136,0.10); color: var(--teal); border-color: rgba(13,148,136,0.25); }
+.meta-pill--class    { background: rgba(91,110,245,0.10); color: var(--accent); border-color: rgba(91,110,245,0.25); }
+.meta-pill--integration { background: rgba(34,197,94,0.10); color: var(--success); border-color: rgba(34,197,94,0.25); }
+.meta-pill--quality  { background: rgba(245,158,11,0.10); color: #d97706; border-color: rgba(245,158,11,0.2); }
+.meta-pill--modeling { background: var(--surface2); color: var(--text-muted); border-color: var(--border); }
+.meta-pill--api      { background: rgba(91,110,245,0.08); color: var(--accent); border-color: rgba(91,110,245,0.2); }
+.meta-pill--remark   { background: var(--surface2); color: var(--text-muted); border-color: var(--border); font-style: italic; }
+
+/* ===== Field tooltip — metadata chips ===== */
+.tooltip-meta {
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tooltip-meta-chip {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Wider tooltip to accommodate metadata */
+.field-tooltip {
+  max-width: 300px;
+}
+
+/* FK join-column row icon */
+.col-icon.fk {
+  background: var(--accent-light);
+  border-color: rgba(91,110,245,0.25);
+  color: var(--accent);
+  font-size: 6px;
+}

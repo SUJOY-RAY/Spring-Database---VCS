@@ -1,7 +1,11 @@
 package com.dbvcs.model;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
- * Represents a single field/column on an entity.
+ * Represents a single field/column on an entity, including all
+ * dbvcs metadata annotations collected at startup.
  */
 public class FieldSchema {
 
@@ -11,6 +15,13 @@ public class FieldSchema {
     private boolean id;
     private String columnName;
     private String comment;
+
+    /**
+     * Flat key/value map of every dbvcs metadata annotation present on this field.
+     * Keys are annotation attribute paths (e.g. {@code "pii.value"}, {@code "masking.strategy"}).
+     * Values are always strings (enum names, free text, comma-joined arrays).
+     */
+    private Map<String, Object> metadata = new LinkedHashMap<>();
 
     public FieldSchema() {}
 
@@ -49,4 +60,7 @@ public class FieldSchema {
 
     public String getComment() { return comment; }
     public void setComment(String comment) { this.comment = comment; }
+
+    public Map<String, Object> getMetadata() { return metadata; }
+    public void setMetadata(Map<String, Object> metadata) { this.metadata = metadata; }
 }
