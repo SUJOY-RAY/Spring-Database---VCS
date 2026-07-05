@@ -99,7 +99,25 @@ function clearSelection() {
   // Re-render active inner tab at system level
   const activeInner = document.querySelector('.inner-tab-btn.active')?.dataset.innerTab || 'wiki';
   if (activeInner === 'wiki') switchWikiSubTab('overview');
-  else if (activeInner === 'diagram') { autoLayout(); renderCanvas(); setTimeout(fitAll, 60); }
+  else if (activeInner === 'diagram') { 
+    // Force complete canvas clear and redraw the global ER diagram
+    if (canvasRoot) {
+      canvasRoot.innerHTML = '';
+    }
+    // Reset positions to force full layout recalculation
+    positions = {};
+    // Reset view transform to ensure we're not stuck in a table-specific view
+    viewX = 0; 
+    viewY = 0; 
+    viewScale = 1;
+    autoLayout(); 
+    renderCanvas(); 
+    setTimeout(() => {
+      // Apply transform to ensure proper positioning
+      applyTransform();
+      fitAll();
+    }, 100); 
+  }
   else if (activeInner === 'changelog') renderChangelog();
 }
 

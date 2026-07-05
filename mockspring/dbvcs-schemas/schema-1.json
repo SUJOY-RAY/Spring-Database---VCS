@@ -1,12 +1,12 @@
 {
   "version" : 1,
-  "capturedAt" : "2026-07-05T11:17:22.478740500Z",
+  "capturedAt" : "2026-07-05T11:42:07.073121600Z",
   "capturedBy" : "SUJOY-RAY <sujoygithub@gmail.com>",
   "entities" : [ {
     "className" : "com.spring.mockspring.entity.Address",
     "simpleClassName" : "Address",
     "tableName" : "addresses",
-    "comment" : null,
+    "comment" : "kusrbjbjv d,",
     "fields" : [ {
       "name" : "id",
       "javaType" : "Long",
