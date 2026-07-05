@@ -41,10 +41,7 @@ function generateFieldDesc(field) {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
-function generateTableDesc(entity) {
-  const name = entity.tableName.replace(/_/g, ' ');
-  return `information about each ${name.replace(/s$/, '')} record in the system`;
-}
+
 
 // ── SQL Examples ──────────────────────────────────────────
 function buildSqlExample(entity) {
@@ -486,7 +483,7 @@ function groupLabel(groupName, groupEntities) {
 
 // ── Exports ───────────────────────────────────────────────
 window.Utils = {
-  getTypeAbbr, mapSqlType, escapeHtml, generateFieldDesc, generateTableDesc,
+  getTypeAbbr, mapSqlType, escapeHtml, generateFieldDesc,
   buildSqlExample, sampleValue, buildFieldsTable, buildFieldMetaBadges,
   buildTags, buildRefs, buildActivitySection, formatTimeAgo, parseAuthor,
   buildCommitTitle, relLabel, tagClass, tagDesc, svgMake, cardHeight,

@@ -1300,18 +1300,6 @@ code.col-code {
   max-width: 860px;
 }
 
-/* ── Legacy classes kept for safety ── */
-.changelog-entry { display: flex; gap: 16px; margin-bottom: 24px; }
-.changelog-version-badge { background: var(--accent-light); color: var(--accent); border: 1px solid rgba(91,110,245,0.2); border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; height: fit-content; }
-.changelog-entry-body { flex: 1; }
-.changelog-entry-date { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
-.changelog-change { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text); padding: 5px 0; border-bottom: 1px solid var(--border-light); }
-.changelog-change:last-child { border-bottom: none; }
-.changelog-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.changelog-dot.added { background: var(--success); }
-.changelog-dot.removed { background: var(--danger); }
-.changelog-dot.modified { background: var(--warning); }
-
 /* ── New changelog styles ── */
 .cl-header {
   display: flex;

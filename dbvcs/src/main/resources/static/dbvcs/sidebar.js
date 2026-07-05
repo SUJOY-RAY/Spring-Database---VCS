@@ -38,7 +38,6 @@ function deriveSourceSystem(entity) {
 // Returns the group key for the currently active groupMode
 function deriveGroupKey(entity) {
   switch (groupMode) {
-    case 'module':       return deriveGroup(entity);
     case 'domain':       return deriveDomain(entity);
     case 'submodule':    return deriveSubgroup(entity) || deriveGroup(entity);
     case 'criticality':  return deriveCriticality(entity);
@@ -51,7 +50,6 @@ function deriveGroupKey(entity) {
 
 // Icons/badges per groupMode for the group header
 const GROUP_MODE_ICONS = {
-  module:       '▤',
   domain:       '◈',
   submodule:    '◫',
   criticality:  '⚠',
@@ -285,7 +283,6 @@ document.getElementById('btn-sort').addEventListener('click', () => {
   const label    = document.getElementById('group-label');
 
   const MODE_LABELS = {
-    module:       'Module',
     domain:       'Domain',
     submodule:    'Submodule',
     criticality:  'Criticality',
@@ -297,7 +294,6 @@ document.getElementById('btn-sort').addEventListener('click', () => {
 
   function applyMode(mode) {
     groupMode     = mode;
-    groupBySchema = mode !== 'none';
     label.textContent = MODE_LABELS[mode] || mode;
     btn.classList.toggle('active', mode !== 'none');
 

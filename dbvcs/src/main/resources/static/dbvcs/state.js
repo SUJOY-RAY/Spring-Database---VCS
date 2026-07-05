@@ -9,8 +9,7 @@ let schema = null;
 let positions = {};
 let activeTable = null;  // simpleClassName of selected table
 let searchQuery = '';
-let groupBySchema = true;
-let groupMode = 'module';   // 'none' | 'module' | 'domain' | 'criticality' | 'tabletype' | 'submodule' | 'lifecycle' | 'sourcesystem'
+let groupMode = 'domain';   // 'none' | 'domain' | 'submodule' | 'criticality' | 'tabletype' | 'lifecycle' | 'sourcesystem'
 let sortAsc = true;
 let isTableDiagramView = false;  // Track if we're viewing a table-specific diagram
 
@@ -132,7 +131,7 @@ function showToast(msg, error = false) {
 
 // ── Exports ───────────────────────────────────────────────
 window.State = {
-  schema, positions, activeTable, searchQuery, groupBySchema, sortAsc,
+  schema, positions, activeTable, searchQuery, sortAsc,
   viewX, viewY, viewScale, isPanning, panStart, isTableDiagramView,
   initializeApp, loadVersion
 };
