@@ -60,6 +60,7 @@ public class EntityAnnotationValidator {
         // Resolve effective mode: registry bean takes priority over properties
         boolean enabled;
         boolean failOnViolation;
+        List<String> ignoredFields = List.of();
 
         if (registry != null) {
             // Registry bean present — always enabled, respects its own failOnViolation flag
@@ -69,6 +70,7 @@ public class EntityAnnotationValidator {
             DbvcsProperties.ValidationRules rules = properties.getValidation();
             enabled = rules.isEnabled();
             failOnViolation = rules.isFailOnViolation();
+            ignoredFields = rules.getIgnoredFieldNames();
         }
 
         if (!enabled) {
@@ -100,7 +102,15 @@ public class EntityAnnotationValidator {
 
             List<String> missing = findMissingAnnotations(clazz, required);
             if (!missing.isEmpty()) {
-                violations.add(new ViolationReport(clazz.getName(), missing));
+                violations.add(new ViolationReport(clazz.getName(), missing, null));
+            }
+
+            // Validate field-level annotations if we have field requirements
+            if (registry == null) { // Only for properties-based validation for now
+                List<FieldViolationReport> fieldViolations = validateFieldAnnotations(clazz, ignoredFields);
+                if (!fieldViolations.isEmpty()) {
+                    violations.add(new ViolationReport(clazz.getName(), List.of(), fieldViolations));
+                }
             }
         }
 
@@ -169,6 +179,91 @@ public class EntityAnnotationValidator {
     }
 
     // -------------------------------------------------------------------------
+    // Field-level annotation validation
+    // -------------------------------------------------------------------------
+
+    /**
+     * Validates that fields have required annotations, excluding ignored field names.
+     * Currently only validates PII fields require @DataClassification and @AccessLevel.
+     */
+    private List<FieldViolationReport> validateFieldAnnotations(Class<?> clazz, List<String> ignoredFields) {
+        List<FieldViolationReport> violations = new ArrayList<>();
+        
+        for (java.lang.reflect.Field field : getAllFields(clazz)) {
+            // Skip ignored fields (audit fields, etc.)
+            if (ignoredFields.contains(field.getName()) || 
+                ignoredFields.contains(resolveColumnName(field))) {
+                continue;
+            }
+            
+            // Skip transient and relation fields
+            if (isTransient(field) || isRelationField(field)) {
+                continue;
+            }
+            
+            List<String> missing = validateFieldRequiredAnnotations(field);
+            if (!missing.isEmpty()) {
+                violations.add(new FieldViolationReport(field.getName(), missing));
+            }
+        }
+        
+        return violations;
+    }
+    
+    /**
+     * Checks specific field-level annotation requirements.
+     */
+    private List<String> validateFieldRequiredAnnotations(java.lang.reflect.Field field) {
+        List<String> missing = new ArrayList<>();
+        
+        // If field has @Pii, it should also have @DataClassification and @AccessLevel
+        if (field.isAnnotationPresent(com.dbvcs.annotation.Pii.class)) {
+            if (!field.isAnnotationPresent(com.dbvcs.annotation.DataClassification.class)) {
+                missing.add("DataClassification");
+            }
+            if (!field.isAnnotationPresent(com.dbvcs.annotation.AccessLevel.class)) {
+                missing.add("AccessLevel");
+            }
+        }
+        
+        return missing;
+    }
+    
+    private boolean isTransient(java.lang.reflect.Field field) {
+        return field.isAnnotationPresent(jakarta.persistence.Transient.class)
+                || java.lang.reflect.Modifier.isTransient(field.getModifiers());
+    }
+    
+    private boolean isRelationField(java.lang.reflect.Field field) {
+        return field.isAnnotationPresent(jakarta.persistence.OneToOne.class)
+                || field.isAnnotationPresent(jakarta.persistence.OneToMany.class)
+                || field.isAnnotationPresent(jakarta.persistence.ManyToOne.class)
+                || field.isAnnotationPresent(jakarta.persistence.ManyToMany.class);
+    }
+    
+    private String resolveColumnName(java.lang.reflect.Field field) {
+        if (field.isAnnotationPresent(jakarta.persistence.Column.class)) {
+            String name = field.getAnnotation(jakarta.persistence.Column.class).name();
+            if (!name.isEmpty()) return name;
+        }
+        return toSnakeCase(field.getName());
+    }
+    
+    private List<java.lang.reflect.Field> getAllFields(Class<?> clazz) {
+        List<java.lang.reflect.Field> fields = new ArrayList<>();
+        Class<?> current = clazz;
+        while (current != null && current != Object.class) {
+            fields.addAll(Arrays.asList(current.getDeclaredFields()));
+            current = current.getSuperclass();
+        }
+        return fields;
+    }
+    
+    private String toSnakeCase(String name) {
+        return name.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+    }
+
+    // -------------------------------------------------------------------------
     // Annotation presence check
     // -------------------------------------------------------------------------
 
@@ -230,8 +325,20 @@ public class EntityAnnotationValidator {
 
         for (ViolationReport v : violations) {
             sb.append("[dbvcs]  ✗ ").append(v.className()).append("\n");
+            
+            // Entity-level missing annotations
             for (String ann : v.missingAnnotations()) {
                 sb.append("[dbvcs]      missing: @").append(ann).append("\n");
+            }
+            
+            // Field-level missing annotations
+            if (v.fieldViolations() != null && !v.fieldViolations().isEmpty()) {
+                for (FieldViolationReport fv : v.fieldViolations()) {
+                    sb.append("[dbvcs]      field '").append(fv.fieldName()).append("':\n");
+                    for (String ann : fv.missingAnnotations()) {
+                        sb.append("[dbvcs]        missing: @").append(ann).append("\n");
+                    }
+                }
             }
         }
 
@@ -249,5 +356,7 @@ public class EntityAnnotationValidator {
     // Inner types
     // -------------------------------------------------------------------------
 
-    private record ViolationReport(String className, List<String> missingAnnotations) {}
+    private record ViolationReport(String className, List<String> missingAnnotations, List<FieldViolationReport> fieldViolations) {}
+    
+    private record FieldViolationReport(String fieldName, List<String> missingAnnotations) {}
 }

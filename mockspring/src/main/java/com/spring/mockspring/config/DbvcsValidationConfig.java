@@ -47,7 +47,8 @@ public class DbvcsValidationConfig {
                 // Every entity in the project must have these 5 annotations
                 .forAll(
                         Domain.class,
-                        DataClassification.class
+                        DataClassification.class,
+                        Comment.class
                 );
 
                 // Add package-specific rules here as needed:

@@ -15,6 +15,11 @@ import java.util.List;
  *   dbvcs.output-dir=dbvcs-schemas
  *   dbvcs.base-packages=com.example.myapp
  *   dbvcs.ui-path=/dbvcs
+ *   
+ *   # Validation configuration
+ *   dbvcs.validation.enabled=true
+ *   dbvcs.validation.fail-on-violation=false
+ *   dbvcs.validation.ignored-field-names=id,created_at,updated_at,created_by,updated_by,version
  * </pre>
  *
  * <p>All annotation vocabulary lists are configurable so that project teams
@@ -276,6 +281,9 @@ public class DbvcsProperties {
      *   # Require these annotations on all entities
      *   dbvcs.validation.required-annotations=Domain,BusinessModule,DataClassification,Lifecycle
      *   
+     *   # Ignore common audit/system fields from validation
+     *   dbvcs.validation.ignored-field-names=id,created_at,updated_at,created_by,updated_by,version
+     *   
      *   # Or define per-package rules
      *   dbvcs.validation.rules[0].package-pattern=com.example.customer.*
      *   dbvcs.validation.rules[0].required-annotations=Domain,Purpose,DataClassification,Pii
@@ -299,6 +307,16 @@ public class DbvcsProperties {
         private List<String> requiredAnnotations = List.of();
 
         /**
+         * Field names to ignore during validation (e.g., common audit fields).
+         * These fields will not be checked for required annotations.
+         * Default includes common audit/system fields.
+         */
+        private List<String> ignoredFieldNames = Arrays.asList(
+                "id", "created_at", "updated_at", "created_by", "updated_by", 
+                "version", "createdAt", "updatedAt", "createdBy", "updatedBy"
+        );
+
+        /**
          * Package-specific validation rules. Each rule defines a package pattern
          * and the annotations required for entities in that package.
          */
@@ -317,6 +335,11 @@ public class DbvcsProperties {
         public List<String> getRequiredAnnotations() { return requiredAnnotations; }
         public void setRequiredAnnotations(List<String> requiredAnnotations) {
             this.requiredAnnotations = requiredAnnotations;
+        }
+
+        public List<String> getIgnoredFieldNames() { return ignoredFieldNames; }
+        public void setIgnoredFieldNames(List<String> ignoredFieldNames) {
+            this.ignoredFieldNames = ignoredFieldNames;
         }
 
         public List<PackageRule> getRules() { return rules; }

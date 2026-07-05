@@ -1,12 +1,12 @@
 {
   "version" : 1,
-  "capturedAt" : "2026-07-02T18:13:40.383556200Z",
+  "capturedAt" : "2026-07-05T11:17:22.478740500Z",
   "capturedBy" : "SUJOY-RAY <sujoygithub@gmail.com>",
   "entities" : [ {
     "className" : "com.spring.mockspring.entity.Address",
     "simpleClassName" : "Address",
     "tableName" : "addresses",
-    "comment" : "Stores the physical shipping/billing address linked one-to-one with a user account.",
+    "comment" : null,
     "fields" : [ {
       "name" : "id",
       "javaType" : "Long",
@@ -16,17 +16,23 @@
       "comment" : null,
       "metadata" : { }
     }, {
+      "name" : "uuid",
+      "javaType" : "UUID",
+      "nullable" : false,
+      "id" : true,
+      "columnName" : "uuid",
+      "comment" : null,
+      "metadata" : { }
+    }, {
       "name" : "street",
       "javaType" : "String",
       "nullable" : false,
       "id" : false,
       "columnName" : "street",
-      "comment" : "Street line including house number.",
+      "comment" : null,
       "metadata" : {
         "dataClassification.level" : "CONFIDENTIAL",
-        "pii" : "Physical location identifier",
-        "piiCategory.type" : "ADDRESS",
-        "piiCategory.description" : "Street line of the address"
+        "pii" : "Physical location identifier"
       }
     }, {
       "name" : "city",
@@ -34,11 +40,9 @@
       "nullable" : false,
       "id" : false,
       "columnName" : "city",
-      "comment" : "City or town name.",
+      "comment" : null,
       "metadata" : {
         "pii" : "Part of physical address",
-        "piiCategory.type" : "ADDRESS",
-        "piiCategory.description" : "City of residence or delivery",
         "searchable" : "true"
       }
     }, {
@@ -49,9 +53,7 @@
       "columnName" : "state",
       "comment" : "State or province name.",
       "metadata" : {
-        "pii" : "Part of physical address",
-        "piiCategory.type" : "ADDRESS",
-        "piiCategory.description" : "State or province"
+        "pii" : "Part of physical address"
       }
     }, {
       "name" : "postalCode",
@@ -62,8 +64,6 @@
       "comment" : "ZIP or postal code for the address.",
       "metadata" : {
         "pii" : "Geographic identifier",
-        "piiCategory.type" : "ADDRESS",
-        "piiCategory.description" : "Postal/ZIP code",
         "searchable" : "true",
         "indexedFor.purpose" : "Geo-based delivery zone lookup"
       }
@@ -87,37 +87,25 @@
       "joinColumnName" : "user_id"
     } ],
     "metadata" : {
-      "module.name" : "CUSTOMER",
-      "module.description" : "Customer address data",
       "domain.name" : "CUSTOMER",
       "domain.description" : "Customer domain",
-      "purpose.value" : "Stores user shipping and billing addresses",
-      "purpose.description" : "One-to-one with User; used during order fulfilment",
       "criticality.level" : "HIGH",
       "criticality.description" : "Required for order delivery",
-      "businessOwner" : "Customer Experience Team",
-      "technicalOwner" : "Platform Engineering",
-      "dataSteward" : "Customer Data Governance Team",
       "tableType.type" : "MASTER",
       "tableType.description" : "Master address record per user",
       "dataClassification.level" : "CONFIDENTIAL",
       "dataClassification.description" : "Contains physical location PII",
       "accessLevel.level" : "RESTRICTED",
       "pii" : "Contains physical home or billing address",
-      "lawfulBasis.type" : "CONTRACT",
-      "lawfulBasis.description" : "Required for order delivery",
       "retention.type" : "SEVEN_YEARS",
       "retention.description" : "Retained with associated user account",
-      "lifecycle" : "ACTIVE",
-      "updateStrategy" : "UPSERT",
-      "dataQuality.rules" : "street, city, postalCode, and country must not be null",
-      "dataQualityLevel" : "HIGH"
+      "updateStrategy" : "UPSERT"
     },
-    "module" : "CUSTOMER",
+    "module" : null,
     "submodule" : null,
     "domain" : "CUSTOMER",
     "criticalityLevel" : "HIGH",
-    "lifecycleStage" : "ACTIVE",
+    "lifecycleStage" : null,
     "dataClassification" : "CONFIDENTIAL",
     "deprecated" : false,
     "tags" : [ "PII" ]
@@ -142,8 +130,6 @@
       "columnName" : "name",
       "comment" : "Unique display name of the category as shown in the storefront navigation.",
       "metadata" : {
-        "businessKey" : "true",
-        "naturalKey" : "true",
         "searchable" : "true",
         "indexedFor.purpose" : "Category name lookup for storefront navigation and admin search"
       }
@@ -179,44 +165,30 @@
       "joinColumnName" : null
     } ],
     "metadata" : {
-      "module.name" : "PRODUCT",
-      "module.description" : "Product taxonomy and categorisation",
       "domain.name" : "INVENTORY",
       "domain.description" : "Product domain",
-      "purpose.value" : "Defines the product category hierarchy",
-      "purpose.description" : "Self-referencing tree used for storefront navigation and product classification",
       "criticality.level" : "MEDIUM",
       "criticality.description" : "Drives navigation UX; errors cause misclassification but not transaction failures",
-      "businessOwner" : "Product Management Team",
-      "technicalOwner" : "Catalogue Engineering",
       "tableType.type" : "MASTER",
       "tableType.description" : "Reference taxonomy master data",
-      "masterData" : "true",
-      "lookupTable" : "true",
-      "referenceData" : "Product category taxonomy",
       "dataClassification.level" : "PUBLIC",
       "dataClassification.description" : "Category names and descriptions are publicly displayed",
       "accessLevel.level" : "PUBLIC",
-      "lawfulBasis.type" : "LEGITIMATE_INTERESTS",
-      "lawfulBasis.description" : "Core product taxonomy data",
       "retention.type" : "INDEFINITE",
       "retention.description" : "Categories retained as long as products reference them",
-      "lifecycle" : "ACTIVE",
       "refreshFrequency" : "WEEKLY",
       "updateStrategy" : "UPSERT",
-      "dataQuality.rules" : "name must be unique, circular parent references must not be allowed",
-      "dataQualityLevel" : "HIGH",
       "apiExposed" : "true",
       "publicApi" : "true"
     },
-    "module" : "PRODUCT",
+    "module" : null,
     "submodule" : null,
     "domain" : "INVENTORY",
     "criticalityLevel" : "MEDIUM",
-    "lifecycleStage" : "ACTIVE",
+    "lifecycleStage" : null,
     "dataClassification" : "PUBLIC",
     "deprecated" : false,
-    "tags" : [ "Master Data", "Lookup", "Reference Data", "API Exposed", "Public API" ]
+    "tags" : [ "API Exposed", "Public API" ]
   }, {
     "className" : "com.spring.mockspring.entity.Order",
     "simpleClassName" : "Order",
@@ -238,8 +210,6 @@
       "columnName" : "order_number",
       "comment" : "Human-readable unique reference printed on receipts and confirmation emails.",
       "metadata" : {
-        "businessKey" : "true",
-        "naturalKey" : "true",
         "searchable" : "true",
         "indexedFor.purpose" : "Receipt lookup and customer service reference"
       }
@@ -306,30 +276,17 @@
       "joinColumnName" : null
     } ],
     "metadata" : {
-      "remarks" : "Orders are append-only once placed. Status updates are the only permitted mutations.",
-      "module.name" : "ORDER",
-      "module.description" : "Order lifecycle management",
       "domain.name" : "ORDERS",
       "domain.description" : "Orders domain",
-      "purpose.value" : "Captures a customer purchase transaction",
-      "purpose.description" : "Central transactional record linking users, products, payments, and shipments",
       "criticality.level" : "CRITICAL",
       "criticality.description" : "Core revenue-generating entity — must never be deleted",
-      "businessOwner" : "Commerce Operations",
-      "technicalOwner" : "Platform Engineering",
-      "dataSteward" : "Order Data Governance Team",
       "tableType.type" : "TRANSACTIONAL",
       "tableType.description" : "Transactional order record",
-      "transactionalData" : "true",
       "dataClassification.level" : "CONFIDENTIAL",
       "dataClassification.description" : "Contains financial transaction data",
       "accessLevel.level" : "RESTRICTED",
-      "lawfulBasis.type" : "CONTRACT",
-      "lawfulBasis.description" : "Processing required to fulfil purchase contract",
-      "legalHold" : "Potential subject to litigation or audit; must not be purged",
       "retention.type" : "SEVEN_YEARS",
       "retention.description" : "Financial records retained for 7 years per legal requirement",
-      "lifecycle" : "ACTIVE",
       "refreshFrequency" : "REALTIME",
       "updateStrategy" : "APPEND_ONLY",
       "versioned" : "true",
@@ -338,129 +295,16 @@
       "auditColumns.updatedBy" : "updated_by",
       "auditColumns.createdAt" : "placed_at",
       "auditColumns.updatedAt" : "updated_at",
-      "dataQuality.rules" : "orderNumber must be unique, totalAmount must be >= 0, status transitions must follow defined lifecycle",
-      "dataQualityLevel" : "HIGH",
       "apiExposed" : "true"
     },
-    "module" : "ORDER",
+    "module" : null,
     "submodule" : null,
     "domain" : "ORDERS",
     "criticalityLevel" : "CRITICAL",
-    "lifecycleStage" : "ACTIVE",
+    "lifecycleStage" : null,
     "dataClassification" : "CONFIDENTIAL",
     "deprecated" : false,
-    "tags" : [ "Legal Hold", "Transactional", "Auditable", "Versioned", "API Exposed" ]
-  }, {
-    "className" : "com.spring.mockspring.entity.OrderCoupon",
-    "simpleClassName" : "OrderCoupon",
-    "tableName" : "order_coupon",
-    "comment" : "Represents a discount coupon applied to a specific order, including percentage off and maximum discount cap.",
-    "fields" : [ {
-      "name" : "id",
-      "javaType" : "Long",
-      "nullable" : false,
-      "id" : true,
-      "columnName" : "id",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "code",
-      "javaType" : "String",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "code",
-      "comment" : "Unique promo code string entered by the customer at checkout.",
-      "metadata" : {
-        "masking.strategy" : "PARTIAL",
-        "businessKey" : "true",
-        "naturalKey" : "true",
-        "searchable" : "true",
-        "indexedFor.purpose" : "Coupon redemption validation at checkout"
-      }
-    }, {
-      "name" : "discountPercent",
-      "javaType" : "BigDecimal",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "discount_percent",
-      "comment" : "Discount expressed as a percentage (e.g. 15.00 = 15%).",
-      "metadata" : { }
-    }, {
-      "name" : "maxDiscountAmount",
-      "javaType" : "BigDecimal",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "max_discount_amount",
-      "comment" : "Hard cap on the monetary saving; the actual discount never exceeds this value.",
-      "metadata" : { }
-    }, {
-      "name" : "expiresAt",
-      "javaType" : "LocalDateTime",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "expires_at",
-      "comment" : "Timestamp after which the coupon can no longer be redeemed.",
-      "metadata" : { }
-    }, {
-      "name" : "active",
-      "javaType" : "boolean",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "active",
-      "comment" : "False when the coupon has been manually deactivated before its expiry date.",
-      "metadata" : { }
-    }, {
-      "name" : "createdAt",
-      "javaType" : "LocalDateTime",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "created_at",
-      "comment" : null,
-      "metadata" : { }
-    } ],
-    "relations" : [ {
-      "fieldName" : "order",
-      "type" : "MANY_TO_ONE",
-      "targetEntity" : "Order",
-      "mappedBy" : null,
-      "optional" : false,
-      "joinColumnName" : "order_id"
-    } ],
-    "metadata" : {
-      "remarks" : "A coupon belongs to one order. One order may have at most one coupon applied.",
-      "module.name" : "ORDER",
-      "module.description" : "Coupon and promotion management within orders",
-      "domain.name" : "ORDERS",
-      "domain.description" : "Orders domain",
-      "purpose.value" : "Records promotional coupons applied to orders",
-      "purpose.description" : "Tracks discount codes, eligibility rules, and financial impact",
-      "criticality.level" : "HIGH",
-      "criticality.description" : "Financial impact on revenue; misuse can cause revenue leakage",
-      "businessOwner" : "Marketing & Promotions Team",
-      "technicalOwner" : "Platform Engineering",
-      "tableType.type" : "TRANSACTIONAL",
-      "tableType.description" : "Coupon-to-order association record",
-      "transactionalData" : "true",
-      "dataClassification.level" : "INTERNAL",
-      "dataClassification.description" : "Internal promotion data",
-      "accessLevel.level" : "INTERNAL_ONLY",
-      "lawfulBasis.type" : "CONTRACT",
-      "lawfulBasis.description" : "Applied as part of purchase transaction",
-      "retention.type" : "SEVEN_YEARS",
-      "retention.description" : "Retained with parent order for financial audit",
-      "lifecycle" : "ACTIVE",
-      "updateStrategy" : "APPEND_ONLY",
-      "dataQuality.rules" : "code must be unique, discountPercent must be between 0 and 100, maxDiscountAmount must be > 0",
-      "dataQualityLevel" : "HIGH"
-    },
-    "module" : "ORDER",
-    "submodule" : null,
-    "domain" : "ORDERS",
-    "criticalityLevel" : "HIGH",
-    "lifecycleStage" : "ACTIVE",
-    "dataClassification" : "INTERNAL",
-    "deprecated" : false,
-    "tags" : [ "Transactional" ]
+    "tags" : [ "Auditable", "Versioned", "API Exposed" ]
   }, {
     "className" : "com.spring.mockspring.entity.OrderItem",
     "simpleClassName" : "OrderItem",
@@ -500,7 +344,6 @@
       "columnName" : "line_total",
       "comment" : "Computed as quantity × unitPrice. Stored for fast reporting without recalculation.",
       "metadata" : {
-        "derived.expression" : "quantity * unitPrice",
         "dataClassification.level" : "CONFIDENTIAL"
       }
     } ],
@@ -520,154 +363,27 @@
       "joinColumnName" : "product_id"
     } ],
     "metadata" : {
-      "remarks" : "unitPrice is a snapshot of the product price at order time — not the live catalogue price.",
-      "module.name" : "ORDER",
-      "module.description" : "Order line items",
       "domain.name" : "ORDERS",
       "domain.description" : "Orders domain",
-      "purpose.value" : "Stores individual product lines within an order",
-      "purpose.description" : "Child of Order; drives revenue calculations and inventory deduction",
       "criticality.level" : "CRITICAL",
       "criticality.description" : "Drives revenue reporting and inventory management",
-      "businessOwner" : "Commerce Operations",
-      "technicalOwner" : "Platform Engineering",
       "tableType.type" : "TRANSACTIONAL",
       "tableType.description" : "Transactional line-item record",
-      "transactionalData" : "true",
       "dataClassification.level" : "CONFIDENTIAL",
       "dataClassification.description" : "Contains financial pricing data",
       "accessLevel.level" : "RESTRICTED",
-      "lawfulBasis.type" : "CONTRACT",
-      "lawfulBasis.description" : "Required for order fulfilment",
       "retention.type" : "SEVEN_YEARS",
       "retention.description" : "Retained with parent order for financial compliance",
-      "lifecycle" : "ACTIVE",
-      "updateStrategy" : "APPEND_ONLY",
-      "dataQuality.rules" : "quantity must be > 0, lineTotal must equal quantity * unitPrice, unitPrice must be snapshotted at order time",
-      "dataQualityLevel" : "HIGH"
+      "updateStrategy" : "APPEND_ONLY"
     },
-    "module" : "ORDER",
+    "module" : null,
     "submodule" : null,
     "domain" : "ORDERS",
     "criticalityLevel" : "CRITICAL",
-    "lifecycleStage" : "ACTIVE",
+    "lifecycleStage" : null,
     "dataClassification" : "CONFIDENTIAL",
     "deprecated" : false,
-    "tags" : [ "Transactional" ]
-  }, {
-    "className" : "com.spring.mockspring.entity.OrderShipment",
-    "simpleClassName" : "OrderShipment",
-    "tableName" : "order_shipment",
-    "comment" : "Tracks the shipment details for an order, including carrier, tracking number, and estimated/actual delivery timestamps.",
-    "fields" : [ {
-      "name" : "id",
-      "javaType" : "Long",
-      "nullable" : false,
-      "id" : true,
-      "columnName" : "id",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "trackingNumber",
-      "javaType" : "String",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "tracking_number",
-      "comment" : "Carrier-issued tracking number; can be used to deep-link to the carrier tracking page.",
-      "metadata" : {
-        "businessKey" : "true",
-        "naturalKey" : "true",
-        "searchable" : "true",
-        "indexedFor.purpose" : "Shipment tracking lookup by customer and support agents"
-      }
-    }, {
-      "name" : "carrier",
-      "javaType" : "Carrier",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "carrier",
-      "comment" : "Shipping carrier responsible for delivery: UPS, FEDEX, DHL, USPS, or LOCAL courier.",
-      "metadata" : {
-        "searchable" : "true"
-      }
-    }, {
-      "name" : "shippedAt",
-      "javaType" : "LocalDateTime",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "shipped_at",
-      "comment" : "Timestamp when the shipment was dispatched by the warehouse.",
-      "metadata" : { }
-    }, {
-      "name" : "estimatedDelivery",
-      "javaType" : "LocalDateTime",
-      "nullable" : true,
-      "id" : false,
-      "columnName" : "estimated_delivery",
-      "comment" : "Carrier's estimated delivery window; null if not yet provided.",
-      "metadata" : { }
-    }, {
-      "name" : "deliveredAt",
-      "javaType" : "LocalDateTime",
-      "nullable" : true,
-      "id" : false,
-      "columnName" : "delivered_at",
-      "comment" : "Actual delivery timestamp confirmed by the carrier; null until delivered.",
-      "metadata" : { }
-    }, {
-      "name" : "notes",
-      "javaType" : "String",
-      "nullable" : true,
-      "id" : false,
-      "columnName" : "notes",
-      "comment" : "Free-text field for internal handling notes or special delivery instructions.",
-      "metadata" : {
-        "dataClassification.level" : "INTERNAL"
-      }
-    } ],
-    "relations" : [ {
-      "fieldName" : "order",
-      "type" : "ONE_TO_ONE",
-      "targetEntity" : "Order",
-      "mappedBy" : null,
-      "optional" : false,
-      "joinColumnName" : "order_id"
-    } ],
-    "metadata" : {
-      "module.name" : "SHIPPING",
-      "module.description" : "Shipment tracking and carrier management",
-      "domain.name" : "LOGISTICS",
-      "domain.description" : "Logistics and fulfilment domain",
-      "purpose.value" : "Records carrier and tracking data for a fulfilled order",
-      "purpose.description" : "One-to-one with Order once it reaches SHIPPED status",
-      "criticality.level" : "HIGH",
-      "criticality.description" : "Customer-facing; delays or errors directly impact satisfaction",
-      "businessOwner" : "Logistics & Fulfilment Team",
-      "technicalOwner" : "Platform Engineering",
-      "tableType.type" : "TRANSACTIONAL",
-      "tableType.description" : "Shipment fulfilment record",
-      "transactionalData" : "true",
-      "dataClassification.level" : "INTERNAL",
-      "dataClassification.description" : "Internal logistics data",
-      "accessLevel.level" : "INTERNAL_ONLY",
-      "lawfulBasis.type" : "CONTRACT",
-      "lawfulBasis.description" : "Required to fulfil delivery obligation",
-      "retention.type" : "SEVEN_YEARS",
-      "retention.description" : "Retained with associated order",
-      "lifecycle" : "ACTIVE",
-      "updateStrategy" : "UPSERT",
-      "dataQuality.rules" : "trackingNumber must be unique, carrier must not be null, shippedAt must be set before deliveredAt",
-      "dataQualityLevel" : "HIGH",
-      "apiExposed" : "true"
-    },
-    "module" : "SHIPPING",
-    "submodule" : null,
-    "domain" : "LOGISTICS",
-    "criticalityLevel" : "HIGH",
-    "lifecycleStage" : "ACTIVE",
-    "dataClassification" : "INTERNAL",
-    "deprecated" : false,
-    "tags" : [ "Transactional", "API Exposed" ]
+    "tags" : [ ]
   }, {
     "className" : "com.spring.mockspring.entity.Product",
     "simpleClassName" : "Product",
@@ -700,8 +416,6 @@
       "columnName" : "unique_id",
       "comment" : "Internal unique SKU or product identifier used for catalogue management.",
       "metadata" : {
-        "businessKey" : "true",
-        "naturalKey" : "true",
         "searchable" : "true",
         "indexedFor.purpose" : "SKU-based lookup in warehouse and order processing systems"
       }
@@ -774,28 +488,17 @@
       "joinColumnName" : null
     } ],
     "metadata" : {
-      "module.name" : "PRODUCT",
-      "module.description" : "Product catalogue management",
       "domain.name" : "INVENTORY",
       "domain.description" : "Product and inventory domain",
-      "purpose.value" : "Defines sellable products in the catalogue",
-      "purpose.description" : "Master product record; drives storefront display, pricing, and inventory tracking",
       "criticality.level" : "CRITICAL",
       "criticality.description" : "Revenue-generating master data; must be accurate and available at all times",
-      "businessOwner" : "Product Management Team",
-      "technicalOwner" : "Catalogue Engineering",
-      "dataSteward" : "Inventory Data Governance",
       "tableType.type" : "MASTER",
       "tableType.description" : "Master product catalogue",
-      "masterData" : "true",
       "dataClassification.level" : "INTERNAL",
       "dataClassification.description" : "Internal product and pricing data",
       "accessLevel.level" : "INTERNAL_ONLY",
-      "lawfulBasis.type" : "LEGITIMATE_INTERESTS",
-      "lawfulBasis.description" : "Core business product data",
       "retention.type" : "INDEFINITE",
       "retention.description" : "Product records retained indefinitely for historical order references",
-      "lifecycle" : "ACTIVE",
       "refreshFrequency" : "DAILY",
       "updateStrategy" : "UPSERT",
       "auditable" : "true",
@@ -803,242 +506,17 @@
       "auditColumns.updatedBy" : "updated_by",
       "auditColumns.createdAt" : "created_at",
       "auditColumns.updatedAt" : "updated_at",
-      "dataQuality.rules" : "name must not be null, price must be > 0, uniqueID must be unique, stockQuantity must be >= 0",
-      "dataQualityLevel" : "HIGH",
       "apiExposed" : "true",
       "publicApi" : "true"
     },
-    "module" : "PRODUCT",
+    "module" : null,
     "submodule" : null,
     "domain" : "INVENTORY",
     "criticalityLevel" : "CRITICAL",
-    "lifecycleStage" : "ACTIVE",
+    "lifecycleStage" : null,
     "dataClassification" : "INTERNAL",
     "deprecated" : false,
-    "tags" : [ "Master Data", "Auditable", "API Exposed", "Public API" ]
-  }, {
-    "className" : "com.spring.mockspring.entity.ProductDiscount",
-    "simpleClassName" : "ProductDiscount",
-    "tableName" : "product_discount",
-    "comment" : "Defines time-bounded promotional discounts (percentage or fixed amount) that can be applied to a product.",
-    "fields" : [ {
-      "name" : "id",
-      "javaType" : "Long",
-      "nullable" : false,
-      "id" : true,
-      "columnName" : "id",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "label",
-      "javaType" : "String",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "label",
-      "comment" : "Internal display name for the promotion, e.g. 'Summer Sale 20%'.",
-      "metadata" : {
-        "searchable" : "true",
-        "indexedFor.purpose" : "Promotion management dashboard search"
-      }
-    }, {
-      "name" : "discountType",
-      "javaType" : "DiscountType",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "discount_type",
-      "comment" : "PERCENTAGE applies value as a % off; FIXED_AMOUNT deducts a flat currency value.",
-      "metadata" : { }
-    }, {
-      "name" : "value",
-      "javaType" : "BigDecimal",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "value",
-      "comment" : "The discount magnitude — percentage points or currency amount depending on discountType.",
-      "metadata" : {
-        "dataClassification.level" : "INTERNAL"
-      }
-    }, {
-      "name" : "startsAt",
-      "javaType" : "LocalDateTime",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "starts_at",
-      "comment" : "Discount becomes active at this timestamp; purchases before this time are not discounted.",
-      "metadata" : {
-        "indexedFor.purpose" : "Active promotion window query (startsAt <= NOW <= endsAt)"
-      }
-    }, {
-      "name" : "endsAt",
-      "javaType" : "LocalDateTime",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "ends_at",
-      "comment" : "Discount expires at this timestamp; no new orders can use it after this point.",
-      "metadata" : {
-        "indexedFor.purpose" : "Active promotion window query (startsAt <= NOW <= endsAt)"
-      }
-    }, {
-      "name" : "active",
-      "javaType" : "boolean",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "active",
-      "comment" : "Allows manual early deactivation of the promotion without deleting the record.",
-      "metadata" : { }
-    } ],
-    "relations" : [ {
-      "fieldName" : "product",
-      "type" : "MANY_TO_ONE",
-      "targetEntity" : "Product",
-      "mappedBy" : null,
-      "optional" : false,
-      "joinColumnName" : "product_id"
-    } ],
-    "metadata" : {
-      "remarks" : "Only one active discount per product should be active at any given time — enforced at application level.",
-      "module.name" : "PRODUCT",
-      "module.description" : "Product promotions and discount management",
-      "domain.name" : "INVENTORY",
-      "domain.description" : "Product domain",
-      "purpose.value" : "Stores time-limited promotional discounts for products",
-      "purpose.description" : "Drives discounted pricing on the storefront within defined validity windows",
-      "criticality.level" : "HIGH",
-      "criticality.description" : "Incorrect discounts directly impact revenue and customer trust",
-      "businessOwner" : "Marketing & Promotions Team",
-      "technicalOwner" : "Catalogue Engineering",
-      "dataSteward" : "Pricing Data Governance",
-      "tableType.type" : "CONFIGURATION",
-      "tableType.description" : "Promotion configuration records",
-      "dataClassification.level" : "INTERNAL",
-      "dataClassification.description" : "Internal pricing and promotion data",
-      "accessLevel.level" : "INTERNAL_ONLY",
-      "lawfulBasis.type" : "LEGITIMATE_INTERESTS",
-      "lawfulBasis.description" : "Internal marketing operations",
-      "retention.type" : "THREE_YEARS",
-      "retention.description" : "Retained for marketing analysis and audit",
-      "lifecycle" : "ACTIVE",
-      "refreshFrequency" : "DAILY",
-      "updateStrategy" : "UPSERT",
-      "auditable" : "true",
-      "auditColumns.createdBy" : "created_by",
-      "auditColumns.updatedBy" : "updated_by",
-      "auditColumns.createdAt" : "starts_at",
-      "auditColumns.updatedAt" : "updated_at",
-      "dataQuality.rules" : "startsAt must be before endsAt, value must be > 0, PERCENTAGE value must be between 0 and 100",
-      "dataQualityLevel" : "HIGH"
-    },
-    "module" : "PRODUCT",
-    "submodule" : null,
-    "domain" : "INVENTORY",
-    "criticalityLevel" : "HIGH",
-    "lifecycleStage" : "ACTIVE",
-    "dataClassification" : "INTERNAL",
-    "deprecated" : false,
-    "tags" : [ "Auditable" ]
-  }, {
-    "className" : "com.spring.mockspring.entity.ProductImage",
-    "simpleClassName" : "ProductImage",
-    "tableName" : "product_image",
-    "comment" : "Holds image URLs and metadata for product photos, supporting multiple images per product with sort order and a primary flag.",
-    "fields" : [ {
-      "name" : "id",
-      "javaType" : "Long",
-      "nullable" : false,
-      "id" : true,
-      "columnName" : "id",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "url",
-      "javaType" : "String",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "url",
-      "comment" : "HTTPS URL pointing to the hosted product image asset.",
-      "metadata" : {
-        "searchable" : "true"
-      }
-    }, {
-      "name" : "altText",
-      "javaType" : "String",
-      "nullable" : true,
-      "id" : false,
-      "columnName" : "alt_text",
-      "comment" : "Accessibility alt-text for the image; displayed when image cannot load and read by screen readers.",
-      "metadata" : { }
-    }, {
-      "name" : "sortOrder",
-      "javaType" : "int",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "sort_order",
-      "comment" : "Display order position; lower values appear first in image galleries.",
-      "metadata" : {
-        "indexedFor.purpose" : "Ordered image gallery rendering"
-      }
-    }, {
-      "name" : "primary",
-      "javaType" : "boolean",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "primary",
-      "comment" : "Marks the hero/primary image shown in listing views. Only one image per product should be true.",
-      "metadata" : {
-        "indexedFor.purpose" : "Primary image lookup for product listing pages"
-      }
-    }, {
-      "name" : "uploadedAt",
-      "javaType" : "LocalDateTime",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "uploaded_at",
-      "comment" : "Timestamp when the image was uploaded. Immutable.",
-      "metadata" : { }
-    } ],
-    "relations" : [ {
-      "fieldName" : "product",
-      "type" : "MANY_TO_ONE",
-      "targetEntity" : "Product",
-      "mappedBy" : null,
-      "optional" : false,
-      "joinColumnName" : "product_id"
-    } ],
-    "metadata" : {
-      "module.name" : "PRODUCT",
-      "module.description" : "Product media and image management",
-      "domain.name" : "INVENTORY",
-      "domain.description" : "Product domain",
-      "purpose.value" : "Stores image URLs and display metadata for product photos",
-      "purpose.description" : "Supports multiple images per product with ordering and primary designation",
-      "criticality.level" : "MEDIUM",
-      "criticality.description" : "Impacts storefront UX but not transactional integrity",
-      "businessOwner" : "Product Management Team",
-      "technicalOwner" : "Catalogue Engineering",
-      "tableType.type" : "MASTER",
-      "tableType.description" : "Product image asset records",
-      "dataClassification.level" : "PUBLIC",
-      "dataClassification.description" : "Image URLs are publicly served on the storefront",
-      "accessLevel.level" : "PUBLIC",
-      "lawfulBasis.type" : "LEGITIMATE_INTERESTS",
-      "lawfulBasis.description" : "Product media for commercial display",
-      "retention.type" : "INDEFINITE",
-      "retention.description" : "Retained as long as product exists",
-      "lifecycle" : "ACTIVE",
-      "refreshFrequency" : "DAILY",
-      "updateStrategy" : "UPSERT",
-      "dataQuality.rules" : "url must be a valid HTTPS URL, sortOrder must be >= 0, only one image per product may have primary = true",
-      "dataQualityLevel" : "MEDIUM",
-      "publicApi" : "true"
-    },
-    "module" : "PRODUCT",
-    "submodule" : null,
-    "domain" : "INVENTORY",
-    "criticalityLevel" : "MEDIUM",
-    "lifecycleStage" : "ACTIVE",
-    "dataClassification" : "PUBLIC",
-    "deprecated" : false,
-    "tags" : [ "Public API" ]
+    "tags" : [ "Auditable", "API Exposed", "Public API" ]
   }, {
     "className" : "com.spring.mockspring.entity.Review",
     "simpleClassName" : "Review",
@@ -1080,8 +558,7 @@
       "comment" : "Full review text written by the customer. May contain personal opinions or incidental PII.",
       "metadata" : {
         "dataClassification.level" : "INTERNAL",
-        "pii" : "Free-text — may contain user-submitted personal data",
-        "masking.strategy" : "PARTIAL"
+        "pii" : "Free-text — may contain user-submitted personal data"
       }
     }, {
       "name" : "createdAt",
@@ -1108,44 +585,30 @@
       "joinColumnName" : "product_id"
     } ],
     "metadata" : {
-      "remarks" : "Review body must be moderated for harmful content before being surfaced publicly.",
-      "module.name" : "PRODUCT",
-      "module.description" : "Customer product reviews and ratings",
       "domain.name" : "CUSTOMER",
       "domain.description" : "Customer-generated content",
-      "purpose.value" : "Stores customer reviews and star ratings for products",
-      "purpose.description" : "User-generated content; drives product credibility and purchase decisions",
       "criticality.level" : "MEDIUM",
       "criticality.description" : "Impacts conversion rate; free-text may contain PII or harmful content",
-      "businessOwner" : "Customer Experience Team",
-      "technicalOwner" : "Platform Engineering",
-      "dataSteward" : "Customer Data Governance Team",
       "tableType.type" : "TRANSACTIONAL",
       "tableType.description" : "User-generated review record",
-      "transactionalData" : "true",
       "dataClassification.level" : "INTERNAL",
       "dataClassification.description" : "User content — moderated before public display",
       "accessLevel.level" : "INTERNAL_ONLY",
       "pii" : "Free-text body field may contain personal information submitted by users",
-      "lawfulBasis.type" : "CONSENT",
-      "lawfulBasis.description" : "User voluntarily submits review content",
       "consentRequired" : "User consent obtained at time of review submission",
       "retention.type" : "THREE_YEARS",
       "retention.description" : "Retained for 3 years or until user requests deletion",
-      "lifecycle" : "ACTIVE",
       "updateStrategy" : "UPSERT",
-      "dataQuality.rules" : "rating must be between 1 and 5, body must be moderated before display",
-      "dataQualityLevel" : "MEDIUM",
       "apiExposed" : "true"
     },
-    "module" : "PRODUCT",
+    "module" : null,
     "submodule" : null,
     "domain" : "CUSTOMER",
     "criticalityLevel" : "MEDIUM",
-    "lifecycleStage" : "ACTIVE",
+    "lifecycleStage" : null,
     "dataClassification" : "INTERNAL",
     "deprecated" : false,
-    "tags" : [ "PII", "Consent Required", "Transactional", "API Exposed" ]
+    "tags" : [ "PII", "Consent Required", "API Exposed" ]
   }, {
     "className" : "com.spring.mockspring.entity.User",
     "simpleClassName" : "User",
@@ -1169,11 +632,7 @@
       "metadata" : {
         "dataClassification.level" : "CONFIDENTIAL",
         "pii" : "Direct identifier — uniquely identifies the person",
-        "piiCategory.type" : "EMAIL",
-        "piiCategory.description" : "Customer login email",
         "encrypted.algorithm" : "AES256",
-        "businessKey" : "true",
-        "naturalKey" : "true",
         "searchable" : "true",
         "indexedFor.purpose" : "Login lookup and unique constraint enforcement"
       }
@@ -1186,9 +645,7 @@
       "comment" : "Customer's given (first) name.",
       "metadata" : {
         "dataClassification.level" : "CONFIDENTIAL",
-        "pii" : "Part of personal name",
-        "piiCategory.type" : "NAME",
-        "piiCategory.description" : "First name"
+        "pii" : "Part of personal name"
       }
     }, {
       "name" : "lastName",
@@ -1199,9 +656,7 @@
       "comment" : "Customer's family (last) name.",
       "metadata" : {
         "dataClassification.level" : "CONFIDENTIAL",
-        "pii" : "Part of personal name",
-        "piiCategory.type" : "NAME",
-        "piiCategory.description" : "Last name"
+        "pii" : "Part of personal name"
       }
     }, {
       "name" : "passwordHash",
@@ -1211,11 +666,9 @@
       "columnName" : "password_hash",
       "comment" : "Bcrypt-hashed user password. Never store or log the plain-text value.",
       "metadata" : {
-        "remarks" : "Must always be stored as a bcrypt hash with cost factor ≥ 12.",
         "dataClassification.level" : "RESTRICTED",
         "accessLevel.level" : "ADMIN_ONLY",
-        "encrypted.algorithm" : "BCRYPT",
-        "masking.strategy" : "FULL"
+        "encrypted.algorithm" : "BCRYPT"
       }
     }, {
       "name" : "active",
@@ -1257,30 +710,18 @@
       "joinColumnName" : null
     } ],
     "metadata" : {
-      "remarks" : "Password is stored as a bcrypt hash. Never log or expose raw credentials.",
-      "module.name" : "CUSTOMER",
-      "module.description" : "Core customer identity and authentication",
       "domain.name" : "CUSTOMER",
       "domain.description" : "Customer domain",
-      "purpose.value" : "Stores registered user accounts",
-      "purpose.description" : "Primary customer master record for identity, auth, and profile data",
       "criticality.level" : "CRITICAL",
       "criticality.description" : "Central entity referenced by orders, reviews, sessions, and notifications",
-      "businessOwner" : "Customer Experience Team",
-      "technicalOwner" : "Platform Engineering",
-      "dataSteward" : "Customer Data Governance Team",
       "tableType.type" : "MASTER",
       "tableType.description" : "Master data — one row per registered user",
-      "masterData" : "true",
       "dataClassification.level" : "CONFIDENTIAL",
       "dataClassification.description" : "Contains PII and authentication credentials",
       "accessLevel.level" : "RESTRICTED",
       "pii" : "Contains name, email, and hashed credentials",
-      "lawfulBasis.type" : "CONTRACT",
-      "lawfulBasis.description" : "Processing necessary to fulfil user account contract",
       "retention.type" : "SEVEN_YEARS",
       "retention.description" : "Retained for legal and audit obligations",
-      "lifecycle" : "ACTIVE",
       "updateStrategy" : "UPSERT",
       "versioned" : "true",
       "auditable" : "true",
@@ -1288,175 +729,15 @@
       "auditColumns.updatedBy" : "updated_by",
       "auditColumns.createdAt" : "created_at",
       "auditColumns.updatedAt" : "updated_at",
-      "dataQuality.rules" : "email must be unique and non-null, passwordHash must never be stored in plain text",
-      "dataQualityLevel" : "HIGH",
       "apiExposed" : "true"
     },
-    "module" : "CUSTOMER",
+    "module" : null,
     "submodule" : null,
     "domain" : "CUSTOMER",
     "criticalityLevel" : "CRITICAL",
-    "lifecycleStage" : "ACTIVE",
+    "lifecycleStage" : null,
     "dataClassification" : "CONFIDENTIAL",
     "deprecated" : false,
-    "tags" : [ "PII", "Master Data", "Auditable", "Versioned", "API Exposed" ]
-  }, {
-    "className" : "com.spring.mockspring.entity.UserNotification",
-    "simpleClassName" : "UserNotification",
-    "tableName" : "user_notification",
-    "comment" : "In-app notifications sent to users for order updates, promotions, system alerts, and review replies.",
-    "fields" : [ {
-      "name" : "id",
-      "javaType" : "Long",
-      "nullable" : false,
-      "id" : true,
-      "columnName" : "id",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "type",
-      "javaType" : "NotificationType",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "type",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "title",
-      "javaType" : "String",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "title",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "message",
-      "javaType" : "String",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "message",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "read",
-      "javaType" : "boolean",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "read",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "createdAt",
-      "javaType" : "LocalDateTime",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "created_at",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "readAt",
-      "javaType" : "LocalDateTime",
-      "nullable" : true,
-      "id" : false,
-      "columnName" : "read_at",
-      "comment" : null,
-      "metadata" : { }
-    } ],
-    "relations" : [ {
-      "fieldName" : "user",
-      "type" : "MANY_TO_ONE",
-      "targetEntity" : "User",
-      "mappedBy" : null,
-      "optional" : false,
-      "joinColumnName" : "user_id"
-    } ],
-    "metadata" : { },
-    "module" : null,
-    "submodule" : null,
-    "domain" : null,
-    "criticalityLevel" : null,
-    "lifecycleStage" : null,
-    "dataClassification" : null,
-    "deprecated" : false,
-    "tags" : [ ]
-  }, {
-    "className" : "com.spring.mockspring.entity.UserSession",
-    "simpleClassName" : "UserSession",
-    "tableName" : "user_session",
-    "comment" : "Tracks active and historical login sessions per user, storing the auth token, client IP, user-agent, and expiry time.",
-    "fields" : [ {
-      "name" : "id",
-      "javaType" : "Long",
-      "nullable" : false,
-      "id" : true,
-      "columnName" : "id",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "token",
-      "javaType" : "String",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "token",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "ipAddress",
-      "javaType" : "String",
-      "nullable" : true,
-      "id" : false,
-      "columnName" : "ip_address",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "userAgent",
-      "javaType" : "String",
-      "nullable" : true,
-      "id" : false,
-      "columnName" : "user_agent",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "createdAt",
-      "javaType" : "LocalDateTime",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "created_at",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "expiresAt",
-      "javaType" : "LocalDateTime",
-      "nullable" : false,
-      "id" : false,
-      "columnName" : "expires_at",
-      "comment" : null,
-      "metadata" : { }
-    }, {
-      "name" : "revokedAt",
-      "javaType" : "LocalDateTime",
-      "nullable" : true,
-      "id" : false,
-      "columnName" : "revoked_at",
-      "comment" : null,
-      "metadata" : { }
-    } ],
-    "relations" : [ {
-      "fieldName" : "user",
-      "type" : "MANY_TO_ONE",
-      "targetEntity" : "User",
-      "mappedBy" : null,
-      "optional" : false,
-      "joinColumnName" : "user_id"
-    } ],
-    "metadata" : { },
-    "module" : null,
-    "submodule" : null,
-    "domain" : null,
-    "criticalityLevel" : null,
-    "lifecycleStage" : null,
-    "dataClassification" : null,
-    "deprecated" : false,
-    "tags" : [ ]
+    "tags" : [ "PII", "Auditable", "Versioned", "API Exposed" ]
   } ]
 }

@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "addresses")
+@Comment("kusrbjbjv d,")
 @Domain(name = DomainType.CUSTOMER, description = "Customer domain")
 @Criticality(level = CriticalityLevel.HIGH, description = "Required for order delivery")
 @TableType(type = TableTypeValue.MASTER, description = "Master address record per user")
