@@ -10,6 +10,7 @@ let positions = {};
 let activeTable = null;  // simpleClassName of selected table
 let searchQuery = '';
 let groupBySchema = true;
+let groupMode = 'module';   // 'none' | 'module' | 'domain' | 'criticality' | 'tabletype' | 'submodule' | 'lifecycle' | 'sourcesystem'
 let sortAsc = true;
 let isTableDiagramView = false;  // Track if we're viewing a table-specific diagram
 
@@ -93,7 +94,7 @@ async function loadVersion(version) {
     autoLayout();
     // Re-render active inner tab at system level
     const activeInner = document.querySelector('.inner-tab-btn.active')?.dataset.innerTab || 'wiki';
-    if (activeInner === 'wiki') renderSystemWiki();
+    if (activeInner === 'wiki') switchWikiSubTab('overview');
     else if (activeInner === 'diagram') { renderCanvas(); setTimeout(fitAll, 60); }
     snapshotDate.textContent = schema.capturedAt
       ? new Date(schema.capturedAt).toLocaleString()

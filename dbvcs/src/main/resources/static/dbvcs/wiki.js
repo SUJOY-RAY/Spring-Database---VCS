@@ -23,7 +23,8 @@ function switchInnerTab(name) {
       const entity = schema && schema.entities.find(e => e.simpleClassName === activeTable);
       if (entity) renderWikiPage(entity);
     } else {
-      renderSystemWiki();
+      // Show overview sub-tab when no table selected
+      switchWikiSubTab('overview');
     }
   }
 }
@@ -32,11 +33,37 @@ document.querySelectorAll('.inner-tab-btn').forEach(btn => {
   btn.addEventListener('click', () => switchInnerTab(btn.dataset.innerTab));
 });
 
+// ── Wiki Sub-Tab Switching ───────────────────────────────
+function switchWikiSubTab(subtabName) {
+  document.querySelectorAll('.wiki-subtab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.wikiSubtab === subtabName);
+  });
+  
+  if (activeTable) {
+    // If table is selected, ignore sub-tabs and show the table details
+    return;
+  }
+
+  if (subtabName === 'overview') {
+    renderSystemWikiOverview();
+  } else if (subtabName === 'all-tables') {
+    renderSystemWikiAllTables();
+  }
+}
+
+document.querySelectorAll('.wiki-subtab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchWikiSubTab(btn.dataset.wikiSubtab));
+});
+
 // ── Table Selection ───────────────────────────────────────
 function selectTable(name) {
   activeTable = name;
   const entity = schema.entities.find(e => e.simpleClassName === name);
   if (!entity) return;
+
+  // Hide wiki sub-tabs when a table is selected
+  const subtabbar = document.querySelector('.wiki-subtabbar');
+  if (subtabbar) subtabbar.style.display = 'none';
 
   // Update context chip in the inner tabbar
   const ctx = document.getElementById('inner-tabbar-context');
@@ -66,9 +93,12 @@ function clearSelection() {
   // Clear context chip
   const ctx = document.getElementById('inner-tabbar-context');
   if (ctx) ctx.innerHTML = '';
+  // Show wiki sub-tabs again
+  const subtabbar = document.querySelector('.wiki-subtabbar');
+  if (subtabbar) subtabbar.style.display = '';
   // Re-render active inner tab at system level
   const activeInner = document.querySelector('.inner-tab-btn.active')?.dataset.innerTab || 'wiki';
-  if (activeInner === 'wiki') renderSystemWiki();
+  if (activeInner === 'wiki') switchWikiSubTab('overview');
   else if (activeInner === 'diagram') { autoLayout(); renderCanvas(); setTimeout(fitAll, 60); }
   else if (activeInner === 'changelog') renderChangelog();
 }
@@ -359,6 +389,12 @@ function row(meta, key, label, descKey) {
 
 // ── System Wiki (no table selected) ───────────────────────
 function renderSystemWiki() {
+  // Dispatch to current sub-tab (or default to overview)
+  const activeSubTab = document.querySelector('.wiki-subtab-btn.active')?.dataset.wikiSubtab || 'overview';
+  switchWikiSubTab(activeSubTab);
+}
+
+function renderSystemWikiOverview() {
   if (!schema) return;
   const entities = schema.entities || [];
   const totalFields    = entities.reduce((s, e) => s + (e.fields    || []).length, 0);
@@ -416,9 +452,31 @@ function renderSystemWiki() {
   });
   html += `</div></div>`;
 
+  wikiContent.innerHTML = html;
+}
+
+function renderSystemWikiAllTables() {
+  if (!schema) return;
+  const entities = schema.entities || [];
+
+  let html = '';
+
+  // Header
+  html += `<div class="wiki-page-header">
+    <div class="wiki-page-title">
+      <div class="wiki-table-icon" style="background:var(--accent)">⊞</div>
+      <h1>All Tables</h1>
+    </div>
+    <div class="wiki-page-meta">
+      <div class="wiki-meta-item">
+        <div class="wiki-meta-dot"></div>
+        <span>${entities.length} tables</span>
+      </div>
+    </div>
+  </div>`;
+
   // All tables flat list
   html += `<div class="wiki-section">
-    <h3>All Tables (${entities.length})</h3>
     <table class="wiki-table">
       <thead><tr>
         <th>Table</th><th>Class</th><th>Fields</th><th>Relations</th><th>Classification</th><th>Tags</th><th>Description</th>
@@ -458,6 +516,7 @@ function renderSystemWiki() {
 
 // ── Exports ───────────────────────────────────────────────
 window.Wiki = {
-  switchInnerTab, selectTable, clearSelection, renderWikiPage,
-  toggleFieldsTable, buildEntityMetaPanel, renderSystemWiki
+  switchInnerTab, switchWikiSubTab, selectTable, clearSelection, 
+  renderWikiPage, toggleFieldsTable, buildEntityMetaPanel, 
+  renderSystemWiki, renderSystemWikiOverview, renderSystemWikiAllTables
 };

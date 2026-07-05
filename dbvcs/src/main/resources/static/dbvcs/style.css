@@ -301,6 +301,79 @@ body {
 
 .group-toggle:hover { background: var(--surface3); }
 
+.group-toggle.active { border-color: var(--accent); color: var(--accent); }
+
+.group-caret { flex-shrink: 0; opacity: 0.7; }
+
+/* Group-by dropdown */
+.group-dropdown-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.group-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 200;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  min-width: 160px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  padding: 4px 0;
+  list-style: none;
+  margin: 0;
+}
+
+.group-dropdown.hidden { display: none; }
+
+.group-dropdown-header {
+  padding: 4px 12px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.group-dropdown-divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 3px 0;
+}
+
+.group-option {
+  display: flex;
+  align-items: center;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.group-option:hover { background: var(--surface3); }
+
+.group-option.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.group-option.active::before {
+  content: '✓';
+  margin-right: 7px;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.group-option:not(.active)::before {
+  content: '';
+  display: inline-block;
+  width: 17px;
+}
+
 .icon-btn {
   background: none;
   border: 1px solid transparent;
@@ -343,6 +416,26 @@ body {
 }
 
 .schema-group-header:hover { color: var(--text); }
+
+.schema-group-icon {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.schema-group-name {
+  flex: 1;
+}
+
+.schema-group-count {
+  font-size: 10px;
+  font-weight: 500;
+  background: var(--surface3);
+  border-radius: 10px;
+  padding: 1px 6px;
+  color: var(--text-muted);
+  letter-spacing: 0;
+  text-transform: none;
+}
 
 .schema-caret {
   font-size: 9px;
@@ -639,6 +732,37 @@ body {
 .tab-content.active {
   display: flex;
   flex-direction: column;
+}
+
+/* ===== Wiki sub-tabs ===== */
+.wiki-subtabbar {
+  display: flex;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--surface1);
+  gap: 0;
+  padding: 0;
+}
+
+.wiki-subtab-btn {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.12s, border-color 0.12s;
+}
+
+.wiki-subtab-btn:hover {
+  color: var(--text);
+}
+
+.wiki-subtab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 /* ===== Wiki tab ===== */

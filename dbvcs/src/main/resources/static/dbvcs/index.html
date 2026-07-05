@@ -47,10 +47,25 @@
           <input id="sidebar-search" type="text" placeholder="Search for tables, fields, notes…" />
         </div>
         <div class="sidebar-group-bar">
-          <button id="btn-group-schema" class="group-toggle active">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-            Group by: Schema
-          </button>
+          <div class="group-dropdown-wrap">
+            <button id="btn-group-schema" class="group-toggle active" title="Change grouping">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+              <span id="group-label">Module</span>
+              <svg class="group-caret" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <ul id="group-dropdown" class="group-dropdown hidden">
+              <li class="group-dropdown-header">Group by</li>
+              <li data-mode="module"      class="group-option active">Module</li>
+              <li data-mode="domain"      class="group-option">Domain</li>
+              <li data-mode="submodule"   class="group-option">Submodule</li>
+              <li data-mode="criticality" class="group-option">Criticality</li>
+              <li data-mode="tabletype"   class="group-option">Table Type</li>
+              <li data-mode="lifecycle"   class="group-option">Lifecycle Stage</li>
+              <li data-mode="sourcesystem" class="group-option">Source System</li>
+              <li class="group-dropdown-divider"></li>
+              <li data-mode="none"        class="group-option">No Grouping</li>
+            </ul>
+          </div>
           <button id="btn-clear-search" class="icon-btn" title="Clear search">✕</button>
           <button id="btn-sort" class="icon-btn" title="Sort">⇅</button>
         </div>
@@ -89,6 +104,10 @@
 
       <!-- Wiki panel -->
       <div id="tab-wiki" class="tab-content active">
+        <div class="wiki-subtabbar">
+          <button class="wiki-subtab-btn active" data-wiki-subtab="overview">Overview</button>
+          <button class="wiki-subtab-btn" data-wiki-subtab="all-tables">All Tables</button>
+        </div>
         <div id="wiki-content" class="wiki-content">
           <div class="wiki-empty">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>

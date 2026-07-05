@@ -16,12 +16,49 @@ function deriveSubgroup(entity) {
 }
 
 function deriveDomain(entity) {
-  return (entity.metadata || {})['domain.name'] || '';
+  return (entity.metadata || {})['domain.name'] || 'unassigned';
 }
 
 function deriveCriticality(entity) {
-  return (entity.metadata || {})['criticality.level'] || '';
+  return (entity.metadata || {})['criticality.level'] || 'unspecified';
 }
+
+function deriveTableType(entity) {
+  return (entity.metadata || {})['tableType.value'] || 'standard';
+}
+
+function deriveLifecycle(entity) {
+  return (entity.metadata || {})['lifecycle.stage'] || 'unspecified';
+}
+
+function deriveSourceSystem(entity) {
+  return (entity.metadata || {})['sourceSystem.name'] || 'internal';
+}
+
+// Returns the group key for the currently active groupMode
+function deriveGroupKey(entity) {
+  switch (groupMode) {
+    case 'module':       return deriveGroup(entity);
+    case 'domain':       return deriveDomain(entity);
+    case 'submodule':    return deriveSubgroup(entity) || deriveGroup(entity);
+    case 'criticality':  return deriveCriticality(entity);
+    case 'tabletype':    return deriveTableType(entity);
+    case 'lifecycle':    return deriveLifecycle(entity);
+    case 'sourcesystem': return deriveSourceSystem(entity);
+    default:             return null;
+  }
+}
+
+// Icons/badges per groupMode for the group header
+const GROUP_MODE_ICONS = {
+  module:       '▤',
+  domain:       '◈',
+  submodule:    '◫',
+  criticality:  '⚠',
+  tabletype:    '⊞',
+  lifecycle:    '↻',
+  sourcesystem: '⇆',
+};
 
 function deriveGroupLabel(groupName, groupEntities) {
   const ent = (groupEntities || []).find(e => {
@@ -64,11 +101,11 @@ function renderSidebar() {
     : b.simpleClassName.localeCompare(a.simpleClassName)
   );
 
-  if (groupBySchema) {
-    // Group by logical domain group
+  if (groupMode !== 'none') {
+    // Group by active mode
     const groups = {};
     entities.forEach(e => {
-      const g = deriveGroup(e);
+      const g = deriveGroupKey(e) || 'other';
       if (!groups[g]) groups[g] = [];
       groups[g].push(e);
     });
@@ -84,9 +121,18 @@ function buildSchemaGroup(groupName, entities) {
   const group = document.createElement('div');
   group.className = 'schema-group';
 
+  const icon = GROUP_MODE_ICONS[groupMode] || '▤';
+  const displayName = groupName.charAt(0).toUpperCase() + groupName.slice(1);
+  const count = entities.length;
+
   const header = document.createElement('div');
   header.className = 'schema-group-header';
-  header.innerHTML = `<span class="schema-caret">▾</span><span>${groupName}</span>`;
+  header.innerHTML = `
+    <span class="schema-caret">▾</span>
+    <span class="schema-group-icon">${icon}</span>
+    <span class="schema-group-name">${displayName}</span>
+    <span class="schema-group-count">${count}</span>
+  `;
   header.addEventListener('click', () => group.classList.toggle('collapsed'));
   group.appendChild(header);
 
@@ -232,18 +278,56 @@ document.getElementById('btn-sort').addEventListener('click', () => {
   renderSidebar();
 });
 
-document.getElementById('btn-group-schema').addEventListener('click', () => {
-  groupBySchema = !groupBySchema;
-  const btn = document.getElementById('btn-group-schema');
-  btn.classList.toggle('active', groupBySchema);
-  btn.textContent = groupBySchema ? '≡ Group by: Schema' : '≡ No grouping';
-  renderSidebar();
-});
+// ── Group-by dropdown ─────────────────────────────────────
+(function () {
+  const btn      = document.getElementById('btn-group-schema');
+  const dropdown = document.getElementById('group-dropdown');
+  const label    = document.getElementById('group-label');
+
+  const MODE_LABELS = {
+    module:       'Module',
+    domain:       'Domain',
+    submodule:    'Submodule',
+    criticality:  'Criticality',
+    tabletype:    'Table Type',
+    lifecycle:    'Lifecycle Stage',
+    sourcesystem: 'Source System',
+    none:         'No Grouping',
+  };
+
+  function applyMode(mode) {
+    groupMode     = mode;
+    groupBySchema = mode !== 'none';
+    label.textContent = MODE_LABELS[mode] || mode;
+    btn.classList.toggle('active', mode !== 'none');
+
+    // Update active option
+    dropdown.querySelectorAll('.group-option').forEach(li => {
+      li.classList.toggle('active', li.dataset.mode === mode);
+    });
+
+    dropdown.classList.add('hidden');
+    renderSidebar();
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('hidden');
+  });
+
+  dropdown.querySelectorAll('.group-option').forEach(li => {
+    li.addEventListener('click', () => applyMode(li.dataset.mode));
+  });
+
+  document.addEventListener('click', () => dropdown.classList.add('hidden'));
+  dropdown.addEventListener('click', e => e.stopPropagation());
+})();
 
 // ── Exports ───────────────────────────────────────────────
 window.Sidebar = {
   deriveGroup, deriveSubgroup, deriveDomain, deriveCriticality,
-  deriveGroupLabel, qualifiedLabel, deriveSchema,
+  deriveTableType, deriveLifecycle, deriveSourceSystem,
+  deriveGroupKey, deriveGroupLabel, qualifiedLabel, deriveSchema,
   renderSidebar, buildSchemaGroup, buildTableItem,
   showFieldTooltip, hideFieldTooltip, positionTooltip
 };
