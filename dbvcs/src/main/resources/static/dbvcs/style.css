@@ -1364,7 +1364,6 @@ code.col-code {
 .cl-changes-box {
   border: 1px solid var(--border);
   border-radius: 8px;
-  overflow: hidden;
   position: relative;
   margin-top: 16px;
 }
@@ -1388,6 +1387,8 @@ code.col-code {
 
 .cl-entity-list {
   padding: 20px 0 4px;
+  overflow: hidden;
+  border-radius: 0 0 8px 8px;
 }
 
 .cl-entity-item {

@@ -57,6 +57,13 @@ public class DbvcsProperties {
     @NestedConfigurationProperty
     private AllowedValues allowedValues = new AllowedValues();
 
+    /**
+     * Runtime validation rules for entity annotations.
+     * Defines which annotations are required for which entities.
+     */
+    @NestedConfigurationProperty
+    private ValidationRules validation = new ValidationRules();
+
     // -------------------------------------------------------------------------
     // Getters / setters
     // -------------------------------------------------------------------------
@@ -75,6 +82,9 @@ public class DbvcsProperties {
 
     public AllowedValues getAllowedValues() { return allowedValues; }
     public void setAllowedValues(AllowedValues allowedValues) { this.allowedValues = allowedValues; }
+
+    public ValidationRules getValidation() { return validation; }
+    public void setValidation(ValidationRules validation) { this.validation = validation; }
 
     // =========================================================================
     // Nested: AllowedValues
@@ -244,5 +254,91 @@ public class DbvcsProperties {
 
         public List<String> getQualityLevels() { return qualityLevels; }
         public void setQualityLevels(List<String> qualityLevels) { this.qualityLevels = qualityLevels; }
+    }
+
+    // =========================================================================
+    // Nested: ValidationRules
+    // =========================================================================
+
+    /**
+     * Runtime validation rules that define which annotations must be present
+     * on entity classes. Unlike the compile-time {@code @RequiredAnnotations},
+     * this validates all {@code @Entity} classes at application startup.
+     *
+     * <p>Example {@code application.properties}:
+     * <pre>
+     *   # Enable validation
+     *   dbvcs.validation.enabled=true
+     *   
+     *   # Fail startup if violations found
+     *   dbvcs.validation.fail-on-violation=true
+     *   
+     *   # Require these annotations on all entities
+     *   dbvcs.validation.required-annotations=Domain,BusinessModule,DataClassification,Lifecycle
+     *   
+     *   # Or define per-package rules
+     *   dbvcs.validation.rules[0].package-pattern=com.example.customer.*
+     *   dbvcs.validation.rules[0].required-annotations=Domain,Purpose,DataClassification,Pii
+     *   
+     *   dbvcs.validation.rules[1].package-pattern=com.example.product.*
+     *   dbvcs.validation.rules[1].required-annotations=Domain,BusinessModule,Lifecycle
+     * </pre>
+     */
+    public static class ValidationRules {
+
+        /** Whether to enable runtime annotation validation. Default: false */
+        private boolean enabled = false;
+
+        /** Whether to fail application startup on validation violations. Default: false (warns only) */
+        private boolean failOnViolation = false;
+
+        /**
+         * Global list of required annotation simple names (e.g., "Domain", "BusinessModule").
+         * Applies to all entities unless overridden by package-specific rules.
+         */
+        private List<String> requiredAnnotations = List.of();
+
+        /**
+         * Package-specific validation rules. Each rule defines a package pattern
+         * and the annotations required for entities in that package.
+         */
+        private List<PackageRule> rules = List.of();
+
+        // -------------------------------------------------------------------------
+        // Getters / setters
+        // -------------------------------------------------------------------------
+
+        public boolean isEnabled() { return enabled; }
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
+
+        public boolean isFailOnViolation() { return failOnViolation; }
+        public void setFailOnViolation(boolean failOnViolation) { this.failOnViolation = failOnViolation; }
+
+        public List<String> getRequiredAnnotations() { return requiredAnnotations; }
+        public void setRequiredAnnotations(List<String> requiredAnnotations) {
+            this.requiredAnnotations = requiredAnnotations;
+        }
+
+        public List<PackageRule> getRules() { return rules; }
+        public void setRules(List<PackageRule> rules) { this.rules = rules; }
+
+        /**
+         * A package-specific validation rule.
+         */
+        public static class PackageRule {
+            /** Package pattern (supports wildcards: com.example.* or com.example.**) */
+            private String packagePattern;
+
+            /** Required annotation simple names for entities in this package */
+            private List<String> requiredAnnotations = List.of();
+
+            public String getPackagePattern() { return packagePattern; }
+            public void setPackagePattern(String packagePattern) { this.packagePattern = packagePattern; }
+
+            public List<String> getRequiredAnnotations() { return requiredAnnotations; }
+            public void setRequiredAnnotations(List<String> requiredAnnotations) {
+                this.requiredAnnotations = requiredAnnotations;
+            }
+        }
     }
 }

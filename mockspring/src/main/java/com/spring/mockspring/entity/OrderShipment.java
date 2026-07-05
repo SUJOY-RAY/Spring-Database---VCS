@@ -41,6 +41,15 @@ public class OrderShipment {
     @Column(nullable = false, unique = true, length = 80)
     private String trackingNumber;
 
+
+    @DbvcsComment("Carrier-issued tracking number; can be used to deep-link to the carrier tracking page.")
+    @BusinessKey
+    @NaturalKey
+    @Searchable
+    @IndexedFor(purpose = "Shipment tracking lookup by customer and support agents")
+    @Column(nullable = false, unique = true, length = 80)
+    private String trackingSerial;
+
     @DbvcsComment("Shipping carrier responsible for delivery: UPS, FEDEX, DHL, USPS, or LOCAL courier.")
     @Searchable
     @Enumerated(EnumType.STRING)

@@ -1,5 +1,7 @@
 package com.spring.mockspring.entity;
 
+import java.util.UUID;
+
 import com.dbvcs.annotation.*;
 import com.dbvcs.annotation.enums.*;
 import jakarta.persistence.*;
@@ -29,6 +31,10 @@ public class Address {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID uuid;
 
     @DbvcsComment("Street line including house number.")
     @Pii("Physical location identifier")

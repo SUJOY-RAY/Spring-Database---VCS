@@ -71,6 +71,14 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Annotation Processing API for compile-time validation -->
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>1.3.2</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -88,6 +96,11 @@
                 <configuration>
                     <source>21</source>
                     <target>21</target>
+                    <!-- Disable during build, enable in consumer projects -->
+                    <proc>none</proc>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
         </plugins>

@@ -1,9 +1,12 @@
 package com.dbvcs.autoconfigure;
 
 import com.dbvcs.core.DbvcsService;
+import com.dbvcs.validation.EntityAnnotationValidator;
+import com.dbvcs.validation.ValidationRuleRegistry;
 import com.dbvcs.versioning.SchemaVersionStore;
 import com.dbvcs.web.DbvcsApiController;
 import com.dbvcs.web.DbvcsUiController;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -61,6 +64,17 @@ public class DbvcsAutoConfiguration {
         return new DbvcsUiController();
     }
 
+    @Bean
+    @ConditionalOnMissingBean
+    public EntityAnnotationValidator entityAnnotationValidator(
+            @Autowired(required = false) ValidationRuleRegistry registry) {
+        EntityAnnotationValidator validator = new EntityAnnotationValidator(properties);
+        if (registry != null) {
+            validator.setRegistry(registry);
+        }
+        return validator;
+    }
+
     /**
      * Register the static UI resources from the jar's {@code /static/dbvcs/} classpath location.
      */
@@ -83,7 +97,13 @@ public class DbvcsAutoConfiguration {
     @EventListener(ContextRefreshedEvent.class)
     public void onContextRefreshed() {
         if (!initialized.compareAndSet(false, true)) return;
+        ClassLoader classLoader = applicationContext.getClassLoader();
+
+        // Run annotation validation before schema scanning
+        EntityAnnotationValidator validator = applicationContext.getBean(EntityAnnotationValidator.class);
+        validator.validate(classLoader);
+
         DbvcsService svc = applicationContext.getBean(DbvcsService.class);
-        svc.initialize(applicationContext.getClassLoader());
+        svc.initialize(classLoader);
     }
 }
