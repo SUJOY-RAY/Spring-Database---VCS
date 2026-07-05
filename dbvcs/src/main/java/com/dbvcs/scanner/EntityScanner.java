@@ -11,7 +11,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Scans a set of classes for JPA {@link Entity} annotations and extracts
@@ -44,8 +43,8 @@ public class EntityScanner {
 
     private EntitySchema buildEntitySchema(Class<?> clazz) {
         String tableName = resolveTableName(clazz);
-        String comment   = clazz.isAnnotationPresent(DbvcsComment.class)
-                ? clazz.getAnnotation(DbvcsComment.class).value()
+        String comment   = clazz.isAnnotationPresent(Comment.class)
+                ? clazz.getAnnotation(Comment.class).value()
                 : null;
         List<FieldSchema>    fields    = new ArrayList<>();
         List<RelationSchema> relations = new ArrayList<>();
@@ -83,8 +82,8 @@ public class EntityScanner {
         boolean isId      = field.isAnnotationPresent(Id.class);
         boolean nullable  = resolveNullable(field, isId);
         String javaType   = field.getType().getSimpleName();
-        String comment    = field.isAnnotationPresent(DbvcsComment.class)
-                ? field.getAnnotation(DbvcsComment.class).value()
+        String comment    = field.isAnnotationPresent(Comment.class)
+                ? field.getAnnotation(Comment.class).value()
                 : null;
 
         FieldSchema schema = new FieldSchema(field.getName(), javaType, nullable, isId, columnName, comment);
@@ -154,14 +153,6 @@ public class EntityScanner {
     private Map<String, Object> collectEntityMetadata(Class<?> clazz) {
         Map<String, Object> m = new LinkedHashMap<>();
 
-        // Documentation
-        ifPresent(clazz, Remarks.class,            a -> m.put("remarks",            a.value()));
-
-        // Business
-        ifPresent(clazz, BusinessModule.class,     a -> {
-            m.put("module.name",        a.name());
-            putIfNotEmpty(m, "module.description", a.description());
-        });
         ifPresent(clazz, Submodule.class,          a -> {
             m.put("submodule.name",     a.name());
             putIfNotEmpty(m, "submodule.description", a.description());
@@ -170,38 +161,22 @@ public class EntityScanner {
             m.put("domain.name",        a.name());
             putIfNotEmpty(m, "domain.description", a.description());
         });
-        ifPresent(clazz, Purpose.class,            a -> {
-            m.put("purpose.value",      a.value());
-            putIfNotEmpty(m, "purpose.description", a.description());
-        });
         ifPresent(clazz, Criticality.class,        a -> {
             m.put("criticality.level",  a.level());
             putIfNotEmpty(m, "criticality.description", a.description());
         });
-
-        // Ownership
-        ifPresent(clazz, BusinessOwner.class,      a -> m.put("businessOwner",      a.value()));
-        ifPresent(clazz, TechnicalOwner.class,     a -> m.put("technicalOwner",     a.value()));
-        ifPresent(clazz, DataSteward.class,        a -> m.put("dataSteward",        a.value()));
 
         // Table metadata
         ifPresent(clazz, TableType.class,          a -> {
             m.put("tableType.type",     a.type());
             putIfNotEmpty(m, "tableType.description", a.description());
         });
-        ifPresent(clazz, MasterData.class,         a -> m.put("masterData",         "true"));
-        ifPresent(clazz, TransactionalData.class,  a -> m.put("transactionalData",  "true"));
-        ifPresent(clazz, LookupTable.class,        a -> m.put("lookupTable",        "true"));
-        ifPresent(clazz, ReferenceData.class,      a -> m.put("referenceData",      a.value()));
 
         // Integration
         ifPresent(clazz, SourceSystem.class,       a -> {
             m.put("sourceSystem.name",  a.name());
             putIfNotEmpty(m, "sourceSystem.description", a.description());
         });
-        ifPresent(clazz, Integration.class,        a -> m.put("integration",        a.value()));
-        ifPresent(clazz, DerivedFrom.class,        a -> m.put("derivedFrom",        a.value()));
-        ifPresent(clazz, Derived.class,            a -> m.put("derived.expression", a.expression()));
 
         // Classification
         ifPresent(clazz, DataClassification.class, a -> {
@@ -212,32 +187,15 @@ public class EntityScanner {
 
         // Privacy & Compliance
         ifPresent(clazz, Pii.class,                a -> m.put("pii",                a.value().isEmpty() ? "true" : a.value()));
-        ifPresent(clazz, PiiCategory.class,        a -> {
-            m.put("piiCategory.type",   a.type());
-            putIfNotEmpty(m, "piiCategory.description", a.description());
-        });
-        ifPresent(clazz, Spd.class,                a -> m.put("spd",                a.value().isEmpty() ? "true" : a.value()));
-        ifPresent(clazz, ContainsChildrenData.class, a -> m.put("containsChildrenData", a.value().isEmpty() ? "true" : a.value()));
-        ifPresent(clazz, LawfulBasis.class,        a -> {
-            m.put("lawfulBasis.type",   a.type());
-            putIfNotEmpty(m, "lawfulBasis.description", a.description());
-        });
         ifPresent(clazz, ConsentRequired.class,    a -> m.put("consentRequired",    a.value().isEmpty() ? "true" : a.value()));
-        ifPresent(clazz, LegalHold.class,          a -> m.put("legalHold",          a.value().isEmpty() ? "true" : a.value()));
 
         // Security
         ifPresent(clazz, Encrypted.class,          a -> m.put("encrypted.algorithm", a.algorithm()));
-        ifPresent(clazz, Masking.class,            a -> m.put("masking.strategy",   a.strategy()));
 
         // Lifecycle
         ifPresent(clazz, DataRetention.class, a -> {
             m.put("retention.type",     a.type());
             putIfNotEmpty(m, "retention.description", a.description());
-        });
-        ifPresent(clazz, Lifecycle.class,          a -> m.put("lifecycle",          a.value()));
-        ifPresent(clazz, DeprecatedSince.class,    a -> {
-            m.put("deprecatedSince.version",     a.version());
-            putIfNotEmpty(m, "deprecatedSince.replacement", a.replacement());
         });
 
         // Operations
@@ -251,10 +209,6 @@ public class EntityScanner {
             m.put("auditColumns.createdAt", a.createdAt());
             m.put("auditColumns.updatedAt", a.updatedAt());
         });
-
-        // Data Quality
-        ifPresent(clazz, DataQuality.class,        a -> m.put("dataQuality.rules",  String.join(", ", a.rules())));
-        ifPresent(clazz, DataQualityLevel.class,   a -> m.put("dataQualityLevel",   a.level()));
 
         // API
         ifPresent(clazz, ApiExposed.class,         a -> m.put("apiExposed",         "true"));
@@ -270,16 +224,11 @@ public class EntityScanner {
     private Map<String, Object> collectFieldMetadata(Field field) {
         Map<String, Object> m = new LinkedHashMap<>();
 
-        // Documentation
-        ifFieldPresent(field, Remarks.class,            a -> m.put("remarks",            a.value()));
-
         // Integration
         ifFieldPresent(field, SourceSystem.class,       a -> {
             m.put("sourceSystem.name",  a.name());
             putIfNotEmpty(m, "sourceSystem.description", a.description());
         });
-        ifFieldPresent(field, DerivedFrom.class,        a -> m.put("derivedFrom",        a.value()));
-        ifFieldPresent(field, Derived.class,            a -> m.put("derived.expression", a.expression()));
 
         // Classification
         ifFieldPresent(field, DataClassification.class, a -> {
@@ -290,30 +239,12 @@ public class EntityScanner {
 
         // Privacy & Compliance
         ifFieldPresent(field, Pii.class,                a -> m.put("pii",                a.value().isEmpty() ? "true" : a.value()));
-        ifFieldPresent(field, PiiCategory.class,        a -> {
-            m.put("piiCategory.type",   a.type());
-            putIfNotEmpty(m, "piiCategory.description", a.description());
-        });
-        ifFieldPresent(field, Spd.class,                a -> m.put("spd",                a.value().isEmpty() ? "true" : a.value()));
-        ifFieldPresent(field, ContainsChildrenData.class, a -> m.put("containsChildrenData", a.value().isEmpty() ? "true" : a.value()));
-        ifFieldPresent(field, LawfulBasis.class,        a -> {
-            m.put("lawfulBasis.type",   a.type());
-            putIfNotEmpty(m, "lawfulBasis.description", a.description());
-        });
         ifFieldPresent(field, ConsentRequired.class,    a -> m.put("consentRequired",    a.value().isEmpty() ? "true" : a.value()));
-        ifFieldPresent(field, LegalHold.class,          a -> m.put("legalHold",          a.value().isEmpty() ? "true" : a.value()));
 
         // Security
         ifFieldPresent(field, Encrypted.class,          a -> m.put("encrypted.algorithm", a.algorithm()));
-        ifFieldPresent(field, Masking.class,            a -> m.put("masking.strategy",   a.strategy()));
-
-        // Data Quality
-        ifFieldPresent(field, DataQuality.class,        a -> m.put("dataQuality.rules",  String.join(", ", a.rules())));
-        ifFieldPresent(field, DataQualityLevel.class,   a -> m.put("dataQualityLevel",   a.level()));
 
         // Data Modeling
-        ifFieldPresent(field, BusinessKey.class,        a -> m.put("businessKey",        "true"));
-        ifFieldPresent(field, NaturalKey.class,         a -> m.put("naturalKey",         "true"));
         ifFieldPresent(field, Searchable.class,         a -> m.put("searchable",         "true"));
         ifFieldPresent(field, IndexedFor.class,         a -> m.put("indexedFor.purpose", a.purpose()));
 

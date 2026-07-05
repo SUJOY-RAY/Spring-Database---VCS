@@ -7,41 +7,31 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "order_items")
-@DbvcsComment("Each row is a single line item within an order, capturing the product, quantity, unit price, and computed line total.")
-@BusinessModule(name = ModuleType.ORDER, description = "Order line items")
+@Comment("Each row is a single line item within an order, capturing the product, quantity, unit price, and computed line total.")
 @Domain(name = DomainType.ORDERS, description = "Orders domain")
-@Purpose(value = "Stores individual product lines within an order", description = "Child of Order; drives revenue calculations and inventory deduction")
 @Criticality(level = CriticalityLevel.CRITICAL, description = "Drives revenue reporting and inventory management")
 @TableType(type = TableTypeValue.TRANSACTIONAL, description = "Transactional line-item record")
 @TransactionalData
-@BusinessOwner("Commerce Operations")
-@TechnicalOwner("Platform Engineering")
 @DataClassification(level = DataClassificationLevel.CONFIDENTIAL, description = "Contains financial pricing data")
 @AccessLevel(level = AccessLevelValue.RESTRICTED)
-@LawfulBasis(type = LawfulBasisType.CONTRACT, description = "Required for order fulfilment")
 @DataRetention(type = RetentionType.SEVEN_YEARS, description = "Retained with parent order for financial compliance")
-@Lifecycle(value = LifecycleStage.ACTIVE)
 @UpdateStrategy(value = UpdateType.APPEND_ONLY)
-@DataQualityLevel(level = QualityLevel.HIGH)
-@DataQuality(rules = {"quantity must be > 0", "lineTotal must equal quantity * unitPrice", "unitPrice must be snapshotted at order time"})
-@Remarks("unitPrice is a snapshot of the product price at order time — not the live catalogue price.")
 public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @DbvcsComment("Number of units of the product purchased in this line item.")
+    @Comment("Number of units of the product purchased in this line item.")
     @Column(nullable = false)
     private Integer quantity;
 
-    @DbvcsComment("Price per unit at the time the order was placed; snapshot to avoid drift if the product price changes later.")
+    @Comment("Price per unit at the time the order was placed; snapshot to avoid drift if the product price changes later.")
     @DataClassification(level = DataClassificationLevel.CONFIDENTIAL)
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal unitPrice;
 
-    @DbvcsComment("Computed as quantity × unitPrice. Stored for fast reporting without recalculation.")
-    @Derived(expression = "quantity * unitPrice")
+    @Comment("Computed as quantity × unitPrice. Stored for fast reporting without recalculation.")
     @DataClassification(level = DataClassificationLevel.CONFIDENTIAL)
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal lineTotal;

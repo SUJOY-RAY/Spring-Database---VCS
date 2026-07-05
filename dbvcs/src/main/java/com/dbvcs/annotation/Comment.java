@@ -23,7 +23,7 @@ import java.lang.annotation.*;
 @Target({ElementType.TYPE, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface DbvcsComment {
+public @interface Comment {
     /** The description text to display in the schema explorer. */
     String value();
 }

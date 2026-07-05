@@ -9,31 +9,20 @@ import java.util.List;
 
 @Entity
 @Table(name = "orders")
-@DbvcsComment("Records every customer order placed through the storefront, tracking status from placement through delivery.")
-@BusinessModule(name = ModuleType.ORDER, description = "Order lifecycle management")
+@Comment("Records every customer order placed through the storefront, tracking status from placement through delivery.")
 @Domain(name = DomainType.ORDERS, description = "Orders domain")
-@Purpose(value = "Captures a customer purchase transaction", description = "Central transactional record linking users, products, payments, and shipments")
 @Criticality(level = CriticalityLevel.CRITICAL, description = "Core revenue-generating entity — must never be deleted")
 @TableType(type = TableTypeValue.TRANSACTIONAL, description = "Transactional order record")
 @TransactionalData
-@BusinessOwner("Commerce Operations")
-@TechnicalOwner("Platform Engineering")
-@DataSteward("Order Data Governance Team")
 @DataClassification(level = DataClassificationLevel.CONFIDENTIAL, description = "Contains financial transaction data")
 @AccessLevel(level = AccessLevelValue.RESTRICTED)
-@LawfulBasis(type = LawfulBasisType.CONTRACT, description = "Processing required to fulfil purchase contract")
 @DataRetention(type = RetentionType.SEVEN_YEARS, description = "Financial records retained for 7 years per legal requirement")
-@LegalHold("Potential subject to litigation or audit; must not be purged")
-@Lifecycle(value = LifecycleStage.ACTIVE)
 @UpdateStrategy(value = UpdateType.APPEND_ONLY)
 @Auditable
 @AuditColumns(createdAt = "placed_at")
 @Versioned
 @RefreshFrequency(value = Frequency.REALTIME)
-@DataQualityLevel(level = QualityLevel.HIGH)
-@DataQuality(rules = {"orderNumber must be unique", "totalAmount must be >= 0", "status transitions must follow defined lifecycle"})
 @ApiExposed
-@Remarks("Orders are append-only once placed. Status updates are the only permitted mutations.")
 public class Order {
 
     public enum Status { PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED }
@@ -42,34 +31,32 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @DbvcsComment("Human-readable unique reference printed on receipts and confirmation emails.")
-    @BusinessKey
-    @NaturalKey
+    @Comment("Human-readable unique reference printed on receipts and confirmation emails.")
     @Searchable
     @IndexedFor(purpose = "Receipt lookup and customer service reference")
     @Column(nullable = false, unique = true, length = 40)
     private String orderNumber;
 
-    @DbvcsComment("Lifecycle state: PENDING → CONFIRMED → SHIPPED → DELIVERED, or CANCELLED.")
+    @Comment("Lifecycle state: PENDING → CONFIRMED → SHIPPED → DELIVERED, or CANCELLED.")
     @Searchable
     @IndexedFor(purpose = "Order status dashboard filtering")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Status status = Status.PENDING;
 
-    @DbvcsComment("Sum of all line totals after discounts, before tax.")
+    @Comment("Sum of all line totals after discounts, before tax.")
     @DataClassification(level = DataClassificationLevel.CONFIDENTIAL, description = "Financial amount — internal use only")
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
-    @DbvcsComment("Timestamp when the customer submitted the order. Immutable after creation.")
+    @Comment("Timestamp when the customer submitted the order. Immutable after creation.")
     @Column(nullable = false, updatable = false)
     private LocalDateTime placedAt = LocalDateTime.now();
 
-    @DbvcsComment("Populated when the order transitions to SHIPPED status.")
+    @Comment("Populated when the order transitions to SHIPPED status.")
     private LocalDateTime shippedAt;
 
-    @DbvcsComment("Populated when the carrier confirms delivery.")
+    @Comment("Populated when the carrier confirms delivery.")
     private LocalDateTime deliveredAt;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
