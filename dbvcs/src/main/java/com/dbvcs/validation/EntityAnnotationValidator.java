@@ -1,12 +1,17 @@
 package com.dbvcs.validation;
 
+import com.dbvcs.annotation.EntityMetadata;
+import com.dbvcs.annotation.FieldMetadata;
 import com.dbvcs.autoconfigure.DbvcsProperties;
-import com.dbvcs.autoconfigure.DbvcsProperties.ValidationRules.PackageRule;
 import com.dbvcs.scanner.ClasspathEntityFinder;
 import jakarta.persistence.Entity;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
+import java.util.Arrays;
 
 /**
  * Runtime validator that checks all {@code @Entity} classes against configurable
@@ -60,24 +65,25 @@ public class EntityAnnotationValidator {
         // Resolve effective mode: registry bean takes priority over properties
         boolean enabled;
         boolean failOnViolation;
-        List<String> ignoredFields = List.of();
 
         if (registry != null) {
             // Registry bean present — always enabled, respects its own failOnViolation flag
             enabled = true;
             failOnViolation = registry.isFailOnViolation();
         } else {
-            DbvcsProperties.ValidationRules rules = properties.getValidation();
-            enabled = rules.isEnabled();
-            failOnViolation = rules.isFailOnViolation();
-            ignoredFields = rules.getIgnoredFieldNames();
+            DbvcsProperties.Validation validation = properties.getValidation();
+            enabled = validation.isEnabled();
+            failOnViolation = validation.isFailOnViolation();
         }
 
         if (!enabled) {
             return;
         }
 
-        Set<String> classNames = finder.findClassNames(properties.getBasePackages(), classLoader);
+        // Get packages to scan
+        String packagesStr = properties.getScanning().getPackages();
+        
+        Set<String> classNames = finder.findClassNames(packagesStr, classLoader);
         List<ViolationReport> violations = new ArrayList<>();
 
         for (String className : classNames) {
@@ -94,28 +100,22 @@ public class EntityAnnotationValidator {
 
             List<String> required = registry != null
                     ? resolveFromRegistry(clazz)
-                    : resolveFromProperties(clazz);
+                    : List.of();
 
             if (required.isEmpty()) {
                 continue;
             }
 
             List<String> missing = findMissingAnnotations(clazz, required);
-            if (!missing.isEmpty()) {
-                violations.add(new ViolationReport(clazz.getName(), missing, null));
-            }
+            List<FieldViolationReport> fieldViolations = checkAttributeRequirements(clazz);
 
-            // Validate field-level annotations if we have field requirements
-            if (registry == null) { // Only for properties-based validation for now
-                List<FieldViolationReport> fieldViolations = validateFieldAnnotations(clazz, ignoredFields);
-                if (!fieldViolations.isEmpty()) {
-                    violations.add(new ViolationReport(clazz.getName(), List.of(), fieldViolations));
-                }
+            if (!missing.isEmpty() || !fieldViolations.isEmpty()) {
+                violations.add(new ViolationReport(clazz.getName(), missing, fieldViolations));
             }
         }
 
         if (violations.isEmpty()) {
-            System.out.println("[dbvcs] Annotation validation passed. All entities comply.");
+            System.out.println("[dbvcs] ✓ Annotation validation passed. All entities comply.");
             return;
         }
 
@@ -124,7 +124,7 @@ public class EntityAnnotationValidator {
         if (failOnViolation) {
             throw new EntityAnnotationViolationException(report);
         } else {
-            System.err.println(report);
+            System.out.println(report);
         }
     }
 
@@ -155,112 +155,6 @@ public class EntityAnnotationValidator {
         }
 
         return new ArrayList<>(required);
-    }
-
-    // -------------------------------------------------------------------------
-    // Resolution: properties-based (string names)
-    // -------------------------------------------------------------------------
-
-    private List<String> resolveFromProperties(Class<?> clazz) {
-        DbvcsProperties.ValidationRules rules = properties.getValidation();
-        String packageName = clazz.getPackageName();
-        String className   = clazz.getName();
-
-        Set<String> required = new LinkedHashSet<>(rules.getRequiredAnnotations());
-
-        for (PackageRule rule : rules.getRules()) {
-            if (matchesPackagePattern(packageName, className, rule.getPackagePattern())) {
-                required.addAll(rule.getRequiredAnnotations());
-                break; // first matching rule wins
-            }
-        }
-
-        return new ArrayList<>(required);
-    }
-
-    // -------------------------------------------------------------------------
-    // Field-level annotation validation
-    // -------------------------------------------------------------------------
-
-    /**
-     * Validates that fields have required annotations, excluding ignored field names.
-     * Currently only validates PII fields require @DataClassification and @AccessLevel.
-     */
-    private List<FieldViolationReport> validateFieldAnnotations(Class<?> clazz, List<String> ignoredFields) {
-        List<FieldViolationReport> violations = new ArrayList<>();
-        
-        for (java.lang.reflect.Field field : getAllFields(clazz)) {
-            // Skip ignored fields (audit fields, etc.)
-            if (ignoredFields.contains(field.getName()) || 
-                ignoredFields.contains(resolveColumnName(field))) {
-                continue;
-            }
-            
-            // Skip transient and relation fields
-            if (isTransient(field) || isRelationField(field)) {
-                continue;
-            }
-            
-            List<String> missing = validateFieldRequiredAnnotations(field);
-            if (!missing.isEmpty()) {
-                violations.add(new FieldViolationReport(field.getName(), missing));
-            }
-        }
-        
-        return violations;
-    }
-    
-    /**
-     * Checks specific field-level annotation requirements.
-     */
-    private List<String> validateFieldRequiredAnnotations(java.lang.reflect.Field field) {
-        List<String> missing = new ArrayList<>();
-        
-        // If field has @Pii, it should also have @DataClassification and @AccessLevel
-        if (field.isAnnotationPresent(com.dbvcs.annotation.Pii.class)) {
-            if (!field.isAnnotationPresent(com.dbvcs.annotation.DataClassification.class)) {
-                missing.add("DataClassification");
-            }
-            if (!field.isAnnotationPresent(com.dbvcs.annotation.AccessLevel.class)) {
-                missing.add("AccessLevel");
-            }
-        }
-        
-        return missing;
-    }
-    
-    private boolean isTransient(java.lang.reflect.Field field) {
-        return field.isAnnotationPresent(jakarta.persistence.Transient.class)
-                || java.lang.reflect.Modifier.isTransient(field.getModifiers());
-    }
-    
-    private boolean isRelationField(java.lang.reflect.Field field) {
-        return field.isAnnotationPresent(jakarta.persistence.OneToOne.class)
-                || field.isAnnotationPresent(jakarta.persistence.OneToMany.class)
-                || field.isAnnotationPresent(jakarta.persistence.ManyToOne.class)
-                || field.isAnnotationPresent(jakarta.persistence.ManyToMany.class);
-    }
-    
-    private String resolveColumnName(java.lang.reflect.Field field) {
-        if (field.isAnnotationPresent(jakarta.persistence.Column.class)) {
-            String name = field.getAnnotation(jakarta.persistence.Column.class).name();
-            if (!name.isEmpty()) return name;
-        }
-        return toSnakeCase(field.getName());
-    }
-    
-    private List<java.lang.reflect.Field> getAllFields(Class<?> clazz) {
-        List<java.lang.reflect.Field> fields = new ArrayList<>();
-        Class<?> current = clazz;
-        while (current != null && current != Object.class) {
-            fields.addAll(Arrays.asList(current.getDeclaredFields()));
-            current = current.getSuperclass();
-        }
-        return fields;
-    }
-    
-    private String toSnakeCase(String name) {
-        return name.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
     }
 
     // -------------------------------------------------------------------------
@@ -317,7 +211,13 @@ public class EntityAnnotationValidator {
         String mode = registry != null ? "registry bean" : "application.properties";
         StringBuilder sb = new StringBuilder();
         sb.append("\n[dbvcs] ─────────────────────────────────────────────────────\n");
-        sb.append("[dbvcs] ANNOTATION VALIDATION FAILED (rules via: ").append(mode).append(")\n");
+        
+        if (failOnViolation) {
+            sb.append("[dbvcs] ANNOTATION VALIDATION FAILED (rules via: ").append(mode).append(")\n");
+        } else {
+            sb.append("[dbvcs] ANNOTATION VALIDATION WARNING (rules via: ").append(mode).append(")\n");
+        }
+        
         sb.append("[dbvcs] ").append(violations.size())
           .append(violations.size() == 1 ? " entity" : " entities")
           .append(" missing required annotations:\n");
@@ -334,9 +234,13 @@ public class EntityAnnotationValidator {
             // Field-level missing annotations
             if (v.fieldViolations() != null && !v.fieldViolations().isEmpty()) {
                 for (FieldViolationReport fv : v.fieldViolations()) {
-                    sb.append("[dbvcs]      field '").append(fv.fieldName()).append("':\n");
+                    if ("<entity>".equals(fv.fieldName())) {
+                        sb.append("[dbvcs]      @EntityMetadata missing required attributes:\n");
+                    } else {
+                        sb.append("[dbvcs]      field '").append(fv.fieldName()).append("' @FieldMetadata missing required attributes:\n");
+                    }
                     for (String ann : fv.missingAnnotations()) {
-                        sb.append("[dbvcs]        missing: @").append(ann).append("\n");
+                        sb.append("[dbvcs]        missing attribute: ").append(ann).append("\n");
                     }
                 }
             }
@@ -345,11 +249,113 @@ public class EntityAnnotationValidator {
         sb.append("[dbvcs] ─────────────────────────────────────────────────────\n");
 
         if (!failOnViolation) {
-            sb.append("[dbvcs] To make this a startup error call .failOnViolation() on the registry,\n");
-            sb.append("[dbvcs] or set dbvcs.validation.fail-on-violation=true in application.properties.\n");
+            sb.append("[dbvcs] Continuing execution with warnings (fail-on-violation=false).\n");
+            sb.append("[dbvcs] To make this a startup error, set dbvcs.validation.fail-on-violation=true.\n");
         }
 
         return sb.toString();
+    }
+
+    // -------------------------------------------------------------------------
+    // Attribute-level validation
+    // -------------------------------------------------------------------------
+
+    /**
+     * Checks that required @EntityMetadata and @FieldMetadata attributes are non-empty.
+     * Merges global attribute rules with any scoped rules matching this class.
+     */
+    private List<FieldViolationReport> checkAttributeRequirements(Class<?> clazz) {
+        List<FieldViolationReport> violations = new ArrayList<>();
+
+        List<String> requiredEntityAttrs = resolveRequiredEntityAttributes(clazz);
+        List<String> requiredFieldAttrs  = resolveRequiredFieldAttributes(clazz);
+
+        // Check entity-level @EntityMetadata attributes
+        if (!requiredEntityAttrs.isEmpty()) {
+            EntityMetadata entityMeta = clazz.getAnnotation(EntityMetadata.class);
+            if (entityMeta != null) {
+                List<String> missing = checkAnnotationAttributes(entityMeta, requiredEntityAttrs);
+                if (!missing.isEmpty()) {
+                    violations.add(new FieldViolationReport("<entity>", missing));
+                }
+            }
+        }
+
+        // Check field-level @FieldMetadata attributes
+        if (!requiredFieldAttrs.isEmpty()) {
+            for (Field field : clazz.getDeclaredFields()) {
+                FieldMetadata fieldMeta = field.getAnnotation(FieldMetadata.class);
+                if (fieldMeta == null) continue;
+                List<String> missing = checkAnnotationAttributes(fieldMeta, requiredFieldAttrs);
+                if (!missing.isEmpty()) {
+                    violations.add(new FieldViolationReport(field.getName(), missing));
+                }
+            }
+        }
+
+        return violations;
+    }
+
+    private List<String> resolveRequiredEntityAttributes(Class<?> clazz) {
+        if (registry != null) {
+            return resolveAttributesFromRules(clazz, false);
+        }
+        String csv = properties.getValidation().getEntity().getRequiredAttributes();
+        return parseCommaSeparated(csv);
+    }
+
+    private List<String> resolveRequiredFieldAttributes(Class<?> clazz) {
+        if (registry != null) {
+            return resolveAttributesFromRules(clazz, true);
+        }
+        String csv = properties.getValidation().getField().getRequiredAttributes();
+        return parseCommaSeparated(csv);
+    }
+
+    /** Merges global + first matching scoped AttributeRule for this class. */
+    private List<String> resolveAttributesFromRules(Class<?> clazz, boolean forFields) {
+        Set<String> merged = new LinkedHashSet<>();
+        String packageName = clazz.getPackageName();
+        String className   = clazz.getName();
+        boolean scopedMatched = false;
+
+        for (ValidationRule.AttributeRule rule : registry.getAttributeRules()) {
+            if (rule.isForFields() != forFields) continue;
+            if (rule.isGlobal()) {
+                merged.addAll(rule.getAttributes());
+            } else if (!scopedMatched && matchesPackagePattern(packageName, className, rule.getScope())) {
+                merged.addAll(rule.getAttributes());
+                scopedMatched = true;
+            }
+        }
+        return new ArrayList<>(merged);
+    }
+
+    /** Checks that the listed attribute names on an annotation are non-blank/non-false. */
+    private List<String> checkAnnotationAttributes(Annotation annotation, List<String> requiredAttrs) {
+        List<String> missing = new ArrayList<>();
+        for (String attr : requiredAttrs) {
+            try {
+                Method m = annotation.annotationType().getDeclaredMethod(attr);
+                Object value = m.invoke(annotation);
+                if (value == null || value.toString().isBlank() || "false".equals(value.toString())) {
+                    missing.add(attr);
+                }
+            } catch (NoSuchMethodException e) {
+                // Attribute doesn't exist on this annotation — skip silently
+            } catch (InvocationTargetException | IllegalAccessException e) {
+                missing.add(attr + "(error reading)");
+            }
+        }
+        return missing;
+    }
+
+    private List<String> parseCommaSeparated(String csv) {
+        if (csv == null || csv.isBlank()) return List.of();
+        return Arrays.stream(csv.split(","))
+                .map(s -> s.trim())
+                .filter(s -> !s.isEmpty())
+                .toList();
     }
 
     // -------------------------------------------------------------------------

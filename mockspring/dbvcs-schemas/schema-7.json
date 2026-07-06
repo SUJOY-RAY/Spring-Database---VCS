@@ -1,6 +1,6 @@
 {
-  "version" : 1,
-  "capturedAt" : "2026-07-06T11:30:10.499197Z",
+  "version" : 7,
+  "capturedAt" : "2026-07-06T11:59:38.835873Z",
   "capturedBy" : "sujoyray <sujoy.mrityunjoy@hyundai-autoever.com>",
   "entities" : [ {
     "className" : "com.spring.mockspring.entity.Comment",
@@ -66,7 +66,7 @@
     "metadata" : {
       "description" : "Comment entity for post discussions",
       "domain" : "CONTENT",
-      "type" : "TRANSACTIONAL",
+      "type" : "AGGREGATE",
       "classification" : "INTERNAL",
       "criticality" : "LOW",
       "auditable" : "true",
@@ -383,15 +383,8 @@
       "nullable" : false,
       "id" : false,
       "columnName" : "first_name",
-      "comment" : "User first name",
-      "metadata" : {
-        "description" : "User first name",
-        "dataType" : "STRING",
-        "classification" : "INTERNAL",
-        "pii" : "true",
-        "piiCategory" : "NAME",
-        "comment" : "User profile first name"
-      }
+      "comment" : null,
+      "metadata" : { }
     }, {
       "name" : "lastName",
       "javaType" : "String",

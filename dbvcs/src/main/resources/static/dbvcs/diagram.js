@@ -442,13 +442,20 @@ function renderTableDiagram(name) {
   const subEntities = schema.entities.filter(e => neighbours.has(e.simpleClassName));
 
   // Lay out: focal entity centred, neighbours arranged around it
-  const CW = CARD_W, CH = (e) => cardHeight(e);
-  const cx = 300, cy = 200;
-  positions[name] = { x: cx, y: cy };
+  const CW = CARD_W;
 
   const others = subEntities.filter(e => e.simpleClassName !== name);
   const angleStep = (2 * Math.PI) / Math.max(others.length, 1);
-  const radius = Math.max(260, others.length * 60);
+  // Radius large enough so neighbour cards don't overlap the focal card
+  const focalH = cardHeight(entity);
+  const maxNeighbourH = others.reduce((m, e) => Math.max(m, cardHeight(e)), 0);
+  const radius = Math.max(300, others.length * 80, (focalH / 2) + (maxNeighbourH / 2) + 60);
+
+  // Centre at an offset that guarantees all cards stay in positive coordinates
+  const cx = radius + CW + 20;
+  const cy = radius + maxNeighbourH + 20;
+  positions[name] = { x: cx, y: cy };
+
   others.forEach((e, i) => {
     const angle = i * angleStep - Math.PI / 2;
     positions[e.simpleClassName] = {
@@ -601,7 +608,22 @@ function fitAll() {
   if (!schema || !schema.entities.length) return;
   const svgRect = canvas.getBoundingClientRect();
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  schema.entities.forEach(e => {
+
+  // In table diagram view, only fit the visible subset of entities
+  const entitiesToFit = (isTableDiagramView && activeTable)
+    ? (() => {
+        const focal = schema.entities.find(e => e.simpleClassName === activeTable);
+        if (!focal) return schema.entities;
+        const visible = new Set([activeTable]);
+        (focal.relations || []).forEach(r => visible.add(r.targetEntity));
+        schema.entities.forEach(e => {
+          (e.relations || []).forEach(r => { if (r.targetEntity === activeTable) visible.add(e.simpleClassName); });
+        });
+        return schema.entities.filter(e => visible.has(e.simpleClassName));
+      })()
+    : schema.entities;
+
+  entitiesToFit.forEach(e => {
     const pos = positions[e.simpleClassName];
     if (!pos) return;
     const h = cardHeight(e);

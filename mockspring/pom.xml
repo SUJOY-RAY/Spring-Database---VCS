@@ -69,11 +69,10 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.custom</groupId>
+			<groupId>com.dbvcs</groupId>
 			<artifactId>dbvcs</artifactId>
 			<version>1.0.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/libs/dbvcs-1.0.0.jar</systemPath>
+			<scope>compile</scope>
 		</dependency>
 
 

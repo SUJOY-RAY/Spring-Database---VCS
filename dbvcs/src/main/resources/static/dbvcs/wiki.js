@@ -127,6 +127,9 @@ function renderWikiPage(entity) {
   const relations = entity.relations || [];
   const schemaName = deriveSchema(entity);
   const tags = entity.tags || [];
+  const tableDesc = entity.comment
+    ? entity.comment
+    : `Stores information about each ${entity.tableName.replace(/_/g, ' ').replace(/s$/, '')} record in the system.`;
 
   let html = '';
 
@@ -150,80 +153,80 @@ function renderWikiPage(entity) {
     </div>`;
   }
 
-  // Page header
+  // Page header with table name, description, and db table name
   html += `<div class="wiki-page-header">
     <div class="wiki-page-title">
-      <div class="wiki-table-icon">T</div>
-      <h1>${entity.tableName} Table</h1>
-      ${entity.criticalityLevel ? `<span class="wiki-criticality-badge wiki-criticality-${entity.criticalityLevel.toLowerCase()}">${entity.criticalityLevel}</span>` : ''}
-    </div>
-    <div class="wiki-page-meta">
-      <div class="wiki-meta-item">
-        <div class="wiki-meta-dot"></div>
-        <span>Last updated: just now</span>
+      <div class="wiki-table-icon">${escapeHtml(entity.simpleClassName.charAt(0).toUpperCase())}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <h1 style="margin:0;font-size:18px;font-weight:700;color:var(--text)">${escapeHtml(entity.simpleClassName)}</h1>
+          ${entity.deprecated ? `<span style="font-size:10px;color:var(--danger);font-weight:700;letter-spacing:0.05em">DEPRECATED</span>` : ''}
+        </div>
+        <p style="font-size:13px;color:var(--text-light);margin:4px 0 6px 0">${tableDesc}</p>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <code style="font-size:11px;color:var(--text-muted);font-family:var(--mono,monospace);background:var(--surface2);border:1px solid var(--border);display:inline-block;padding:2px 8px;border-radius:3px">DB: ${escapeHtml(entity.tableName)}</code>
+          <span style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;color:var(--text-muted)">${fields.length} fields</span>
+          <span style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;color:var(--text-muted)">${relations.length} relations</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted)"><span style="width:7px;height:7px;border-radius:50%;background:var(--success,#16a34a);display:inline-block"></span>Last updated: just now</span>
+        </div>
       </div>
-      <div class="wiki-meta-item">
-        <span>${fields.length} fields</span>
+    </div>
+  </div>`;
+
+  // Tabs for metadata, fields, and table references
+  html += `<div class="wiki-tabs-container">
+    <div class="wiki-tabs-nav">
+      <button class="wiki-tab-btn active" data-wiki-tab="metadata">Metadata</button>
+      <button class="wiki-tab-btn" data-wiki-tab="fields">Fields</button>
+      ${relations.length > 0 ? `<button class="wiki-tab-btn" data-wiki-tab="references">Table References</button>` : ''}
+    </div>
+
+    <!-- Metadata Tab -->
+    <div class="wiki-tab-content active" id="wiki-tab-metadata">
+      ${(() => {
+        const entityMeta = entity.metadata || {};
+        if (Object.keys(entityMeta).length > 0) {
+          return buildEntityMetaPanel(entityMeta);
+        }
+        return '<p style="color:var(--text-muted);font-size:13px">No metadata annotations present.</p>';
+      })()}
+    </div>
+
+    <!-- Fields Tab -->
+    <div class="wiki-tab-content" id="wiki-tab-fields">
+      <div class="fields-table-wrap">
+        ${buildFieldsTable(entity)}
       </div>
-      <div class="wiki-meta-item">
-        <span>${relations.length} relations</span>
-      </div>
-      ${entity.lifecycleStage ? `<div class="wiki-meta-item"><span class="wiki-lifecycle-badge wiki-lifecycle-${entity.lifecycleStage.toLowerCase()}">${entity.lifecycleStage}</span></div>` : ''}
-      ${entity.dataClassification ? `<div class="wiki-meta-item"><span class="wiki-classification-badge">${entity.dataClassification}</span></div>` : ''}
     </div>
-    ${tags.length > 0 ? `<div class="wiki-entity-tags">${tags.map(t => `<span class="wiki-entity-tag wiki-tag-${tagClass(t)}" title="${escapeHtml(tagDesc(t))}">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
-  </div>`;
 
-  // Description
-  const tableDesc = entity.comment
-    ? entity.comment
-    : `Stores information about each ${entity.tableName.replace(/_/g, ' ').replace(/s$/, '')} record in the system.`;
-
-  html += `<div class="wiki-section">
-    <h2>${entity.simpleClassName} Table</h2>
-    <p>${tableDesc}</p>
-  </div>`;
-
-  // Entity-level metadata panel
-  const entityMeta = entity.metadata || {};
-  if (Object.keys(entityMeta).length > 0) {
-    html += `<div class="wiki-section">
-      <h3>Metadata Annotations</h3>
-      ${buildEntityMetaPanel(entityMeta)}
-    </div>`;
-  }
-
-  // Insert code example
-  html += `<div class="wiki-section">
-    <h3>Insert Code Example</h3>
-    ${buildSqlExample(entity)}
-  </div>`;
-
-  // Fields table
-  html += `<div class="wiki-section">
-    <div class="fields-section-header" onclick="toggleFieldsTable(this)">
-      <span class="fields-caret open">▾</span>
-      <h3>Fields (${fields.length})</h3>
-    </div>
-    <div class="fields-table-wrap">
-      ${buildFieldsTable(entity)}
-    </div>
-  </div>`;
-
-  // Table references diagram (only if has relations)
-  if (relations.length > 0) {
-    html += `<div class="wiki-section">
-      <h3>Table references</h3>
+    <!-- Table References Tab -->
+    ${relations.length > 0 ? `<div class="wiki-tab-content" id="wiki-tab-references">
       <div class="table-refs-diagram">
         <div id="mini-svg-${entity.simpleClassName}"></div>
       </div>
-    </div>`;
-  }
+    </div>` : ''}
+  </div>`;
 
-  // Recent activity placeholder
+  // Recent activity as footer
   html += buildActivitySection(entity);
 
   wikiContent.innerHTML = html;
+
+  // Wire up tab switching
+  wikiContent.querySelectorAll('.wiki-tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const tabName = this.dataset.wikiTab;
+      // Remove active from all buttons
+      wikiContent.querySelectorAll('.wiki-tab-btn').forEach(b => b.classList.remove('active'));
+      // Add active to clicked button
+      this.classList.add('active');
+      // Hide all content
+      wikiContent.querySelectorAll('.wiki-tab-content').forEach(t => t.classList.remove('active'));
+      // Show selected content
+      const selectedTab = document.getElementById(`wiki-tab-${tabName}`);
+      if (selectedTab) selectedTab.classList.add('active');
+    });
+  });
 
   // Render mini diagram if relations exist
   if (relations.length > 0) {
@@ -240,169 +243,195 @@ function renderWikiPage(entity) {
   });
 }
 
-function toggleFieldsTable(headerEl) {
-  const caret = headerEl.querySelector('.fields-caret');
-  const wrap = headerEl.nextElementSibling;
-  const isOpen = caret.classList.contains('open');
-  caret.classList.toggle('open', !isOpen);
-  wrap.style.display = isOpen ? 'none' : '';
-}
-
 // ── Entity Metadata Panel ─────────────────────────────────
 function buildEntityMetaPanel(meta) {
-  const categories = [
-    {
-      label: 'Business',
-      icon: '🏢',
-      rows: [
-        row(meta, 'module.name',        'Module',        'module.description'),
-        row(meta, 'submodule.name',     'Submodule',     'submodule.description'),
-        row(meta, 'domain.name',        'Domain',        'domain.description'),
-        row(meta, 'purpose.value',      'Purpose',       'purpose.description'),
-        row(meta, 'criticality.level',  'Criticality',   'criticality.description'),
-      ]
-    },
-    {
-      label: 'Ownership',
-      icon: '👤',
-      rows: [
-        row(meta, 'businessOwner',  'Business Owner'),
-        row(meta, 'technicalOwner', 'Technical Owner'),
-        row(meta, 'dataSteward',    'Data Steward'),
-      ]
-    },
-    {
-      label: 'Table Classification',
-      icon: '🗄️',
-      rows: [
-        row(meta, 'tableType.type',        'Table Type',    'tableType.description'),
-        row(meta, 'masterData',            'Master Data'),
-        row(meta, 'transactionalData',     'Transactional'),
-        row(meta, 'lookupTable',           'Lookup Table'),
-        row(meta, 'referenceData',         'Reference Data'),
-      ]
-    },
-    {
-      label: 'Integration',
-      icon: '🔗',
-      rows: [
-        row(meta, 'sourceSystem.name', 'Source System', 'sourceSystem.description'),
-        row(meta, 'integration',       'Integration'),
-        row(meta, 'derivedFrom',       'Derived From'),
-        row(meta, 'derived.expression','Expression'),
-      ]
-    },
-    {
-      label: 'Data Classification',
-      icon: '🔒',
-      rows: [
-        row(meta, 'dataClassification.level', 'Classification', 'dataClassification.description'),
-        row(meta, 'accessLevel.level',         'Access Level'),
-      ]
-    },
-    {
-      label: 'Privacy & Compliance',
-      icon: '🛡️',
-      rows: [
-        row(meta, 'pii',              'PII'),
-        row(meta, 'piiCategory.type', 'PII Category',   'piiCategory.description'),
-        row(meta, 'spd',              'Sensitive Data'),
-        row(meta, 'containsChildrenData', 'Children Data'),
-        row(meta, 'lawfulBasis.type', 'Lawful Basis',   'lawfulBasis.description'),
-        row(meta, 'consentRequired',  'Consent Required'),
-        row(meta, 'legalHold',        'Legal Hold'),
-      ]
-    },
-    {
-      label: 'Security',
-      icon: '🔐',
-      rows: [
-        row(meta, 'encrypted.algorithm', 'Encryption'),
-        row(meta, 'masking.strategy',     'Masking'),
-      ]
-    },
-    {
-      label: 'Lifecycle',
-      icon: '📅',
-      rows: [
-        row(meta, 'retention.type',          'Retention',        'retention.description'),
-        row(meta, 'lifecycle',               'Lifecycle Stage'),
-        row(meta, 'deprecatedSince.version', 'Deprecated Since', 'deprecatedSince.replacement'),
-      ]
-    },
-    {
-      label: 'Operations',
-      icon: '⚙️',
-      rows: [
-        row(meta, 'refreshFrequency', 'Refresh Frequency'),
-        row(meta, 'updateStrategy',   'Update Strategy'),
-        row(meta, 'versioned',        'Versioned'),
-        row(meta, 'auditable',        'Auditable'),
-        row(meta, 'auditColumns.createdBy', 'Audit: createdBy'),
-        row(meta, 'auditColumns.updatedBy', 'Audit: updatedBy'),
-        row(meta, 'auditColumns.createdAt', 'Audit: createdAt'),
-        row(meta, 'auditColumns.updatedAt', 'Audit: updatedAt'),
-      ]
-    },
-    {
-      label: 'Data Quality',
-      icon: '✅',
-      rows: [
-        row(meta, 'dataQuality.rules', 'Quality Rules'),
-        row(meta, 'dataQualityLevel',  'Quality Level'),
-      ]
-    },
-    {
-      label: 'API',
-      icon: '🌐',
-      rows: [
-        row(meta, 'apiExposed', 'API Exposed'),
-        row(meta, 'publicApi',  'Public API'),
-      ]
-    },
-    {
-      label: 'Notes',
-      icon: '📝',
-      rows: [
-        row(meta, 'remarks', 'Remarks'),
-      ]
-    },
+  const allRows = [
+    // Business
+    row(meta, 'module.name',        'Module'),
+    row(meta, 'submodule',          'Submodule'),
+    row(meta, 'domain',             'Domain'),
+    row(meta, 'purpose.value',      'Purpose'),
+    row(meta, 'criticality',        'Criticality'),
+    row(meta, 'type',               'Type'),
+    // Ownership
+    row(meta, 'businessOwner',  'Business Owner'),
+    row(meta, 'technicalOwner', 'Technical Owner'),
+    row(meta, 'dataSteward',    'Data Steward'),
+    // Table Classification
+    row(meta, 'masterData',            'Master Data'),
+    row(meta, 'transactionalData',     'Transactional'),
+    row(meta, 'lookupTable',           'Lookup Table'),
+    row(meta, 'referenceData',         'Reference Data'),
+    // Integration
+    row(meta, 'sourceSystem', 'Source System'),
+    row(meta, 'integration',  'Integration'),
+    row(meta, 'derivedFrom',  'Derived From'),
+    row(meta, 'derived.expression','Expression'),
+    // Data Classification
+    row(meta, 'classification',  'Classification'),
+    row(meta, 'accessLevel',     'Access Level'),
+    // Privacy & Compliance
+    row(meta, 'pii',              'PII'),
+    row(meta, 'piiCategory', 'PII Category'),
+    row(meta, 'spd',              'Sensitive Data'),
+    row(meta, 'containsChildrenData', 'Children Data'),
+    row(meta, 'lawfulBasis', 'Lawful Basis'),
+    row(meta, 'consentRequired',  'Consent Required'),
+    row(meta, 'legalHold',        'Legal Hold'),
+    // Security
+    row(meta, 'encryption', 'Encryption'),
+    row(meta, 'masking',     'Masking'),
+    // Lifecycle
+    row(meta, 'retention',          'Retention'),
+    row(meta, 'lifecycle',          'Lifecycle Stage'),
+    row(meta, 'deprecatedSince.version', 'Deprecated Since'),
+    // Operations
+    row(meta, 'refreshFrequency', 'Refresh Frequency'),
+    row(meta, 'updateStrategy',   'Update Strategy'),
+    row(meta, 'versioned',        'Versioned'),
+    row(meta, 'auditable',        'Auditable'),
+    row(meta, 'auditColumns.createdBy', 'Audit: createdBy'),
+    row(meta, 'auditColumns.updatedBy', 'Audit: updatedBy'),
+    row(meta, 'auditColumns.createdAt', 'Audit: createdAt'),
+    row(meta, 'auditColumns.updatedAt', 'Audit: updatedAt'),
+    // Data Quality
+    row(meta, 'dataQuality.rules', 'Quality Rules'),
+    row(meta, 'dataQualityLevel',  'Quality Level'),
+    // API
+    row(meta, 'apiExposed', 'API Exposed'),
+    row(meta, 'publicApi',  'Public API'),
+    // Notes
+    row(meta, 'remarks', 'Remarks'),
   ];
 
-  // Only render categories that have at least one populated row
-  const activeCats = categories.map(cat => ({
-    ...cat,
-    rows: cat.rows.filter(r => r !== null)
-  })).filter(cat => cat.rows.length > 0);
+  const populatedRows = allRows.filter(r => r !== null);
 
-  if (activeCats.length === 0) return '<p style="color:var(--text-muted);font-size:13px">No metadata annotations present.</p>';
+  if (populatedRows.length === 0) return '<p style="color:var(--text-muted);font-size:13px">No metadata annotations present.</p>';
 
-  let html = '<div class="meta-panel">';
-  activeCats.forEach(cat => {
-    html += `<div class="meta-category">
-      <div class="meta-category-header">
-        <span class="meta-category-icon">${cat.icon}</span>
-        <span class="meta-category-label">${cat.label}</span>
-      </div>
-      <div class="meta-rows">`;
-    cat.rows.forEach(({ label, value, desc }) => {
-      const displayVal = value === 'true' ? '✓ Yes' : escapeHtml(value);
-      const descHtml = desc ? `<span class="meta-row-desc">${escapeHtml(desc)}</span>` : '';
-      html += `<div class="meta-row">
-        <span class="meta-row-label">${escapeHtml(label)}</span>
-        <span class="meta-row-value">${displayVal}${descHtml}</span>
-      </div>`;
-    });
-    html += `</div></div>`;
+  let html = `<table class="meta-table" style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border);border-radius:var(--card-radius);overflow:hidden">
+    <thead style="background:var(--surface2);border-bottom:1px solid var(--border)">
+      <tr>
+        <th style="text-align:left;padding:8px 12px;font-weight:600;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;width:200px">Attribute</th>
+        <th style="text-align:left;padding:8px 12px;font-weight:600;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">Value</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  // Keys that carry boolean-like yes/no semantics
+  const boolTrueKeys  = new Set(['pii','spd','masterData','transactionalData','lookupTable','referenceData','versioned','auditable','apiExposed','publicApi','consentRequired','legalHold','containsChildrenData']);
+  const boolFalseOk   = new Set(['pii','spd','consentRequired','legalHold']);
+
+  // Keys that map to colour-coded badges
+  const critMap = { LOW: 'success', MEDIUM: 'warning', HIGH: 'danger', CRITICAL: 'danger' };
+  const lifecycleMap = { ACTIVE: 'success', DEPRECATED: 'danger', ARCHIVED: 'muted', LEGACY: 'warning' };
+  const entityTypeMap = {
+    MASTER:        ['rgba(34,197,94,.10)',  '#16a34a', 'rgba(34,197,94,.30)'],
+    TRANSACTIONAL: ['rgba(59,130,246,.10)', '#2563eb', 'rgba(59,130,246,.30)'],
+    DIMENSIONAL:   ['rgba(168,85,247,.10)', '#9333ea', 'rgba(168,85,247,.30)'],
+    AGGREGATE:     ['rgba(249,115,22,.10)', '#ea580c', 'rgba(249,115,22,.30)'],
+    STAGING:       ['rgba(245,158,11,.10)', '#d97706', 'rgba(245,158,11,.30)'],
+    AUDIT:         ['rgba(239,68,68,.10)',  '#dc2626', 'rgba(239,68,68,.30)'],
+    REFERENCE:     ['rgba(6,182,212,.10)',  '#0891b2', 'rgba(6,182,212,.30)']
+  };
+
+  const classificationMap = {
+    PUBLIC:        ['rgba(34,197,94,.10)',  '#16a34a', 'rgba(34,197,94,.30)'],
+    INTERNAL:      ['rgba(59,130,246,.10)', '#2563eb', 'rgba(59,130,246,.30)'],
+    CONFIDENTIAL:  ['rgba(249,115,22,.10)', '#ea580c', 'rgba(249,115,22,.30)'],
+    RESTRICTED:    ['rgba(239,68,68,.10)',  '#dc2626', 'rgba(239,68,68,.30)'],
+    SECRET:        ['rgba(168,85,247,.10)', '#9333ea', 'rgba(168,85,247,.30)']
+  };
+  
+  function metaValueHtml(label, value) {
+    const v = value.trim();
+    const vUp = v.toUpperCase();
+
+    // Boolean true
+    if (v === 'true') {
+      const isDanger = boolTrueKeys.has(label.toLowerCase().replace(/\s/g,'')) && ['pii','spd','legalhold','consentRequired','containschildrendata'].includes(label.toLowerCase().replace(/\s/g,''));
+      const [bg, color, border] = isDanger
+        ? ['rgba(239,68,68,0.10)', '#ef4444', 'rgba(239,68,68,0.3)']
+        : ['rgba(34,197,94,0.10)', '#16a34a', 'rgba(34,197,94,0.3)'];
+      return `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;background:${bg};color:${color};border:1px solid ${border}">✓ Yes</span>`;
+    }
+
+    // Boolean false
+    if (v === 'false') {
+      return `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border)">✕ No</span>`;
+    }
+
+    // Criticality
+    if (critMap[vUp]) {
+      const [bg, col, brd] = {
+        success: ['rgba(34,197,94,0.10)', '#16a34a', 'rgba(34,197,94,0.3)'],
+        warning: ['rgba(245,158,11,0.10)', '#d97706', 'rgba(245,158,11,0.3)'],
+        danger:  ['rgba(239,68,68,0.12)', '#ef4444', 'rgba(239,68,68,0.3)'],
+      }[critMap[vUp]];
+      return `<span style="display:inline-flex;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;background:${bg};color:${col};border:1px solid ${brd}">${escapeHtml(v)}</span>`;
+    }
+
+    // Lifecycle
+    if (lifecycleMap[vUp]) {
+      const [bg, col, brd] = {
+        success: ['rgba(34,197,94,0.10)', '#16a34a', 'rgba(34,197,94,0.3)'],
+        warning: ['rgba(245,158,11,0.10)', '#d97706', 'rgba(245,158,11,0.3)'],
+        danger:  ['rgba(239,68,68,0.10)', '#ef4444', 'rgba(239,68,68,0.3)'],
+        muted:   ['rgba(107,114,128,0.10)', '#6b7280', 'rgba(107,114,128,0.3)'],
+      }[lifecycleMap[vUp]];
+      return `<span style="display:inline-flex;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;background:${bg};color:${col};border:1px solid ${brd}">${escapeHtml(v)}</span>`;
+    }
+
+    if (entityTypeMap[vUp]) {
+        const [bg, col, brd] = entityTypeMap[vUp];
+        return `<span style="
+            display:inline-flex;
+            padding:2px 9px;
+            border-radius:20px;
+            font-size:11px;
+            font-weight:600;
+            background:${bg};
+            color:${col};
+            border:1px solid ${brd}">
+            ${escapeHtml(v)}
+        </span>`;
+    }
+
+    if (classificationMap[vUp]) {
+        const [bg, col, brd] = classificationMap[vUp];
+        return `<span style="
+            display:inline-flex;
+            padding:2px 9px;
+            border-radius:20px;
+            font-size:11px;
+            font-weight:600;
+            background:${bg};
+            color:${col};
+            border:1px solid ${brd}">
+            ${escapeHtml(v)}
+        </span>`;
+    }
+
+    // Default: plain styled text
+    return `<span style="font-weight:500;color:var(--text)">${escapeHtml(v)}</span>`;
+  }
+
+  populatedRows.sort((a, b) => a.label.localeCompare(b.label));
+
+  populatedRows.forEach(({ label, value }) => {
+    html += `<tr style="border-bottom:1px solid var(--border-light)">
+      <td style="padding:8px 12px;color:var(--text-muted);font-size:12px;white-space:nowrap">${escapeHtml(label)}</td>
+      <td style="padding:8px 12px">${metaValueHtml(label, value)}</td>
+    </tr>`;
   });
-  html += '</div>';
+
+  html += `</tbody></table>`;
   return html;
 }
 
-function row(meta, key, label, descKey) {
+function row(meta, key, label) {
   const val = meta[key];
   if (val === undefined || val === null || val === '') return null;
-  return { label, value: String(val), desc: descKey ? meta[descKey] || '' : '' };
+  return { label, value: String(val) };
 }
 
 // ── System Wiki (no table selected) ───────────────────────
@@ -497,7 +526,7 @@ function renderSystemWikiAllTables() {
   html += `<div class="wiki-section">
     <table class="wiki-table">
       <thead><tr>
-        <th>Table</th><th>Class</th><th>Fields</th><th>Relations</th><th>Classification</th><th>Tags</th><th>Description</th>
+        <th>Table</th><th>Class</th><th>Fields</th><th>Relations</th><th>Classification</th><th>Tags</th>
       </tr></thead>
       <tbody>
         ${entities.map(e => {
@@ -535,6 +564,6 @@ function renderSystemWikiAllTables() {
 // ── Exports ───────────────────────────────────────────────
 window.Wiki = {
   switchInnerTab, switchWikiSubTab, selectTable, clearSelection, 
-  renderWikiPage, toggleFieldsTable, buildEntityMetaPanel, 
+  renderWikiPage, buildEntityMetaPanel, 
   renderSystemWiki, renderSystemWikiOverview, renderSystemWikiAllTables
 };

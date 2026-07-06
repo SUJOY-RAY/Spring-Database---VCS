@@ -54,6 +54,14 @@ public final class ValidationRuleRegistry {
     private boolean failOnViolation = false;
     private final List<ValidationRule> rules = new ArrayList<>();
 
+    /** Required @EntityMetadata attribute names (non-empty check). */
+    private final List<String> requiredEntityAttributes = new ArrayList<>();
+
+    /** Required @FieldMetadata attribute names (non-empty check). */
+    private final List<String> requiredFieldAttributes = new ArrayList<>();
+
+    /** Scoped attribute rules — per package/entity. */
+    private final List<ValidationRule.AttributeRule> attributeRules = new ArrayList<>();
     private ValidationRuleRegistry() {}
 
     /** Start building a new registry. */
@@ -132,6 +140,73 @@ public final class ValidationRuleRegistry {
     }
 
     // -------------------------------------------------------------------------
+    // Attribute-level requirements
+    // -------------------------------------------------------------------------
+
+    /**
+     * Require that the listed {@code @EntityMetadata} attributes are non-empty on <em>every</em> entity.
+     * <p>Multiple calls are additive.
+     */
+    public ValidationRuleRegistry requireEntityAttributes(String... attributes) {
+        requiredEntityAttributes.addAll(List.of(attributes));
+        attributeRules.add(new ValidationRule.AttributeRule(
+                ValidationRule.AttributeRule.GLOBAL, false, List.of(attributes)));
+        return this;
+    }
+
+    /**
+     * Require that the listed {@code @EntityMetadata} attributes are non-empty on entities
+     * whose package matches {@code pattern} (supports {@code *} and {@code **} wildcards)
+     * or whose class name matches exactly.
+     * <p>Use {@link EntityAttributes} constants for the attribute names.
+     */
+    public ValidationRuleRegistry requireEntityAttributesFor(String pattern, String... attributes) {
+        attributeRules.add(new ValidationRule.AttributeRule(pattern, false, List.of(attributes)));
+        return this;
+    }
+
+    /**
+     * Require that the listed {@code @EntityMetadata} attributes are non-empty on a specific entity class.
+     * <p>Use {@link EntityAttributes} constants for the attribute names.
+     */
+    public ValidationRuleRegistry requireEntityAttributesFor(Class<?> entityClass, String... attributes) {
+        attributeRules.add(new ValidationRule.AttributeRule(entityClass.getName(), false, List.of(attributes)));
+        return this;
+    }
+
+    /**
+     * Require that the listed {@code @FieldMetadata} attributes are non-empty on every field
+     * that carries {@code @FieldMetadata}, across all entities.
+     * <p>Multiple calls are additive.
+     */
+    public ValidationRuleRegistry requireFieldAttributes(String... attributes) {
+        requiredFieldAttributes.addAll(List.of(attributes));
+        attributeRules.add(new ValidationRule.AttributeRule(
+                ValidationRule.AttributeRule.GLOBAL, true, List.of(attributes)));
+        return this;
+    }
+
+    /**
+     * Require that the listed {@code @FieldMetadata} attributes are non-empty on fields
+     * of entities whose package matches {@code pattern} or whose class name matches exactly.
+     * <p>Use {@link FieldAttributes} constants for the attribute names.
+     */
+    public ValidationRuleRegistry requireFieldAttributesFor(String pattern, String... attributes) {
+        attributeRules.add(new ValidationRule.AttributeRule(pattern, true, List.of(attributes)));
+        return this;
+    }
+
+    /**
+     * Require that the listed {@code @FieldMetadata} attributes are non-empty on fields
+     * of a specific entity class.
+     * <p>Use {@link FieldAttributes} constants for the attribute names.
+     */
+    public ValidationRuleRegistry requireFieldAttributesFor(Class<?> entityClass, String... attributes) {
+        attributeRules.add(new ValidationRule.AttributeRule(entityClass.getName(), true, List.of(attributes)));
+        return this;
+    }
+
+    // -------------------------------------------------------------------------
     // Accessors (used by EntityAnnotationValidator)
     // -------------------------------------------------------------------------
 
@@ -141,5 +216,17 @@ public final class ValidationRuleRegistry {
 
     public List<ValidationRule> getRules() {
         return Collections.unmodifiableList(rules);
+    }
+
+    public List<String> getRequiredEntityAttributes() {
+        return Collections.unmodifiableList(requiredEntityAttributes);
+    }
+
+    public List<String> getRequiredFieldAttributes() {
+        return Collections.unmodifiableList(requiredFieldAttributes);
+    }
+
+    public List<ValidationRule.AttributeRule> getAttributeRules() {
+        return Collections.unmodifiableList(attributeRules);
     }
 }

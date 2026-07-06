@@ -43,17 +43,6 @@ function generateFieldDesc(field) {
 
 
 
-// ── SQL Examples ──────────────────────────────────────────
-function buildSqlExample(entity) {
-  const fields = (entity.fields || []).filter(f => !f.id).slice(0, 4);
-  const cols = fields.map(f => f.columnName || f.name).join(', ');
-  const vals = fields.map(f => sampleValue(f)).join(', ');
-  return `<div class="sql-block">
-<span class="sql-keyword">INSERT INTO</span> <span class="sql-table">${entity.tableName}</span> (${cols})
-<span class="sql-keyword">VALUES</span> (${vals});
-</div>`;
-}
-
 function sampleValue(field) {
   const t = field.javaType;
   if (t === 'String') return `<span class="sql-string">'sample_value'</span>`;
@@ -167,44 +156,44 @@ function buildFieldMetaBadges(metadata) {
   if (!metadata || Object.keys(metadata).length === 0) return '';
 
   const pills = [];
-
   const get = (k) => metadata[k];
+  const bool = (k) => get(k) === 'true' || get(k) === true;
 
   // Privacy
-  if (get('pii'))                pills.push(metaPill('PII', get('pii') === 'true' ? '' : get('pii'), 'pii'));
-  if (get('piiCategory.type'))   pills.push(metaPill('PII Category', formatMetaVal('piiCategory.type', get('piiCategory.type'), get('piiCategory.description')), 'pii'));
-  if (get('spd'))                pills.push(metaPill('SPD', get('spd') === 'true' ? '' : get('spd'), 'privacy'));
-  if (get('consentRequired'))    pills.push(metaPill('Consent Required', get('consentRequired') === 'true' ? '' : get('consentRequired'), 'privacy'));
-  if (get('legalHold'))          pills.push(metaPill('Legal Hold', get('legalHold') === 'true' ? '' : get('legalHold'), 'warn'));
-  if (get('containsChildrenData')) pills.push(metaPill('Children Data', get('containsChildrenData') === 'true' ? '' : get('containsChildrenData'), 'warn'));
-  if (get('lawfulBasis.type'))   pills.push(metaPill('Lawful Basis', formatMetaVal('lawfulBasis.type', get('lawfulBasis.type'), get('lawfulBasis.description')), 'privacy'));
+  if (bool('pii'))             pills.push(metaPill('PII', get('piiCategory') || '', 'pii'));
+  if (bool('spd'))             pills.push(metaPill('Sensitive', '', 'privacy'));
+  if (bool('consentRequired')) pills.push(metaPill('Consent Required', '', 'privacy'));
+  if (bool('legalHold'))       pills.push(metaPill('Legal Hold', '', 'warn'));
 
   // Security
-  if (get('encrypted.algorithm')) pills.push(metaPill('Encrypted', get('encrypted.algorithm'), 'security'));
-  if (get('masking.strategy'))    pills.push(metaPill('Masking', get('masking.strategy'), 'security'));
+  if (get('encryption'))  pills.push(metaPill('Encrypted', get('encryption'), 'security'));
+  if (get('masking'))     pills.push(metaPill('Masking', get('masking'), 'security'));
 
-  // Classification
-  if (get('dataClassification.level')) pills.push(metaPill('Classification', formatMetaVal('dataClassification.level', get('dataClassification.level'), get('dataClassification.description')), 'class'));
-  if (get('accessLevel.level'))        pills.push(metaPill('Access', get('accessLevel.level'), 'class'));
+  // Classification & access
+  if (get('classification')) pills.push(metaPill('Classification', get('classification'), 'class'));
+  if (get('accessLevel'))    pills.push(metaPill('Access', get('accessLevel'), 'class'));
 
-  // Integration / derivation
-  if (get('sourceSystem.name')) pills.push(metaPill('Source', formatMetaVal('sourceSystem.name', get('sourceSystem.name'), get('sourceSystem.description')), 'integration'));
-  if (get('derivedFrom'))       pills.push(metaPill('Derived From', get('derivedFrom'), 'integration'));
-  if (get('derived.expression'))pills.push(metaPill('Expression', get('derived.expression'), 'integration'));
+  // Auditing & transactional
+  if (bool('audited'))       pills.push(metaPill('Audited', '', 'ops'));
+  if (bool('transactional')) pills.push(metaPill('Transactional', '', 'ops'));
 
-  // Data quality / modeling
-  if (get('dataQuality.rules'))  pills.push(metaPill('Quality Rules', get('dataQuality.rules'), 'quality'));
-  if (get('dataQualityLevel'))   pills.push(metaPill('Quality Level', get('dataQualityLevel'), 'quality'));
-  if (get('businessKey'))        pills.push(metaPill('Business Key', '', 'modeling'));
-  if (get('naturalKey'))         pills.push(metaPill('Natural Key', '', 'modeling'));
-  if (get('searchable'))         pills.push(metaPill('Searchable', '', 'modeling'));
-  if (get('indexedFor.purpose')) pills.push(metaPill('Indexed For', get('indexedFor.purpose'), 'modeling'));
+  // Indexing & search
+  if (get('indexStrategy') && get('indexStrategy') !== 'PRIMARY')
+                             pills.push(metaPill('Index', get('indexStrategy'), 'modeling'));
+  if (get('searchable'))     pills.push(metaPill('Searchable', get('searchable'), 'modeling'));
+  if (get('updateStrategy')) pills.push(metaPill('Update', get('updateStrategy'), 'modeling'));
 
-  // API
-  if (get('apiExposed')) pills.push(metaPill('API Exposed', '', 'api'));
-  if (get('publicApi'))  pills.push(metaPill('Public API', '', 'api'));
+  // Data type (only if not obvious)
+  if (get('dataType'))       pills.push(metaPill('Type', get('dataType'), 'type'));
 
-  // Misc
+  // Domain
+  if (get('domain'))         pills.push(metaPill('Domain', get('domain'), 'integration'));
+
+  // Derivation
+  if (get('derivedFrom'))         pills.push(metaPill('Derived From', get('derivedFrom'), 'integration'));
+  if (get('derived.expression'))  pills.push(metaPill('Expression', get('derived.expression'), 'integration'));
+
+  // Remarks
   if (get('remarks')) pills.push(metaPill('Remark', get('remarks'), 'remark'));
 
   if (pills.length === 0) return '';
@@ -484,7 +473,7 @@ function groupLabel(groupName, groupEntities) {
 // ── Exports ───────────────────────────────────────────────
 window.Utils = {
   getTypeAbbr, mapSqlType, escapeHtml, generateFieldDesc,
-  buildSqlExample, sampleValue, buildFieldsTable, buildFieldMetaBadges,
+  sampleValue, buildFieldsTable, buildFieldMetaBadges,
   buildTags, buildRefs, buildActivitySection, formatTimeAgo, parseAuthor,
   buildCommitTitle, relLabel, tagClass, tagDesc, svgMake, cardHeight,
   groupColor, groupLabel, hashStr

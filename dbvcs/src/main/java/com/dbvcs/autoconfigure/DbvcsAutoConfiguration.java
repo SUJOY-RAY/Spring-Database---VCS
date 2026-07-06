@@ -3,9 +3,11 @@ package com.dbvcs.autoconfigure;
 import com.dbvcs.core.DbvcsService;
 import com.dbvcs.validation.EntityAnnotationValidator;
 import com.dbvcs.validation.ValidationRuleRegistry;
+import com.dbvcs.versioning.InMemorySchemaVersionStore;
 import com.dbvcs.versioning.SchemaVersionStore;
 import com.dbvcs.web.DbvcsApiController;
 import com.dbvcs.web.DbvcsUiController;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -24,6 +26,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Spring Boot auto-configuration for dbvcs.
  *
  * <p>Activated automatically via {@code META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports}.
+ *
+ * <h3>Configuration Options</h3>
+ * <p>Configure DBVCS via properties in application.properties or application.yml:
+ * <pre>{@code
+ * dbvcs.enabled=true
+ * dbvcs.validation.fail-on-violation=true
+ * dbvcs.scanning.packages=com.example.entity,com.example.model
+ * dbvcs.api.enabled=true
+ * dbvcs.ui.enabled=true
+ * }</pre>
+ *
+ * <p>Or define a {@link ValidationRuleRegistry} bean for compile-time safe config:
+ * <pre>{@code
+ * @Bean
+ * public ValidationRuleRegistry dbvcsValidationRules() {
+ *     return ValidationRuleRegistry.create()
+ *         .failOnViolation()
+ *         .forAll(EntityDescription.class);
+ * }
+ * }</pre>
  */
 @AutoConfiguration
 @ConditionalOnProperty(prefix = "dbvcs", name = "enabled", havingValue = "true", matchIfMissing = true)
@@ -42,14 +64,24 @@ public class DbvcsAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "dbvcs.versioning", name = "enabled", havingValue = "true")
     public SchemaVersionStore schemaVersionStore() {
-        return new SchemaVersionStore(properties.getOutputDir());
+        return new SchemaVersionStore(properties.getVersioning().getStorageDir());
     }
 
     @Bean
     @ConditionalOnMissingBean
+    public SchemaVersionStore schemaVersionStoreDefault() {
+        // Use in-memory store when versioning is disabled
+        return new InMemorySchemaVersionStore();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "dbvcs.scanning", name = "enabled", havingValue = "true", matchIfMissing = true)
     public DbvcsService dbvcsService(SchemaVersionStore store) {
-        return new DbvcsService(store, properties.getBasePackages());
+        String packages = properties.getScanning().getPackages();
+        return new DbvcsService(store, packages);
     }
 
     @Bean
@@ -66,6 +98,7 @@ public class DbvcsAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "dbvcs.validation", name = "enabled", havingValue = "true", matchIfMissing = true)
     public EntityAnnotationValidator entityAnnotationValidator(
             @Autowired(required = false) ValidationRuleRegistry registry) {
         EntityAnnotationValidator validator = new EntityAnnotationValidator(properties);
@@ -83,7 +116,8 @@ public class DbvcsAutoConfiguration {
         return new WebMvcConfigurer() {
             @Override
             public void addResourceHandlers(ResourceHandlerRegistry registry) {
-                registry.addResourceHandler("/dbvcs/", "/dbvcs/**")
+                String uiPath = properties.getUi().getPath();
+                registry.addResourceHandler(uiPath + "/", uiPath + "/**")
                         .addResourceLocations("classpath:/static/dbvcs/");
             }
         };
@@ -97,13 +131,29 @@ public class DbvcsAutoConfiguration {
     @EventListener(ContextRefreshedEvent.class)
     public void onContextRefreshed() {
         if (!initialized.compareAndSet(false, true)) return;
+        
+        if (!properties.isEnabled()) return;
+        
         ClassLoader classLoader = applicationContext.getClassLoader();
 
         // Run annotation validation before schema scanning
-        EntityAnnotationValidator validator = applicationContext.getBean(EntityAnnotationValidator.class);
-        validator.validate(classLoader);
+        if (properties.getValidation().isEnabled()) {
+            try {
+                EntityAnnotationValidator validator = applicationContext.getBean(EntityAnnotationValidator.class);
+                validator.validate(classLoader);
+            } catch (NoSuchBeanDefinitionException ignored) {
+                // Validation bean not available
+            }
+        }
 
-        DbvcsService svc = applicationContext.getBean(DbvcsService.class);
-        svc.initialize(classLoader);
+        // Scan schema
+        if (properties.getScanning().isEnabled()) {
+            try {
+                DbvcsService svc = applicationContext.getBean(DbvcsService.class);
+                svc.initialize(classLoader);
+            } catch (NoSuchBeanDefinitionException ignored) {
+                // Service bean not available
+            }
+        }
     }
 }

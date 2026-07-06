@@ -1,76 +1,112 @@
 package com.spring.mockspring.entity;
 
-import com.dbvcs.annotation.*;
-import com.dbvcs.annotation.enums.*;
+import com.dbvcs.annotation.EntityMetadata;
+import com.dbvcs.annotation.FieldMetadata;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
-@Comment("Registered user accounts including authentication credentials, personal details, and account status.")
-@Domain(name = DomainType.CUSTOMER, description = "Customer domain")
-@Criticality(level = CriticalityLevel.CRITICAL, description = "Central entity referenced by orders, reviews, sessions, and notifications")
-@TableType(type = TableTypeValue.MASTER, description = "Master data — one row per registered user")
-@DataClassification(level = DataClassificationLevel.CONFIDENTIAL, description = "Contains PII and authentication credentials")
-@AccessLevel(level = AccessLevelValue.RESTRICTED)
-@Pii("Contains name, email, and hashed credentials")
-@DataRetention(type = RetentionType.SEVEN_YEARS, description = "Retained for legal and audit obligations")
-@UpdateStrategy(value = UpdateType.UPSERT)
-@Auditable
-@AuditColumns(createdBy = "created_by", updatedBy = "updated_by", createdAt = "created_at", updatedAt = "updated_at")
-@Versioned
-@ApiExposed
+@EntityMetadata(
+    description = "User account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorization",
+    domain = "IDENTITY",
+    type = "MASTER",
+    classification = "CONFIDENTIAL",
+    criticality = "HIGH",
+    auditable = true,
+    submodule = "lwein"
+)
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldMetadata(
+        description = "Unique identifier for the user",
+        dataType = "BIGINT",
+        indexStrategy = "PRIMARY"
+    )
     private Long id;
 
-    @Comment("Primary email address used for login and communications.")
-    @Searchable
-    @IndexedFor(purpose = "Login lookup and unique constraint enforcement")
-    @Pii("Direct identifier — uniquely identifies the person")
-    @Encrypted(algorithm = EncryptionType.AES256)
-    @DataClassification(level = DataClassificationLevel.CONFIDENTIAL)
     @Column(nullable = false, unique = true, length = 100)
+    @FieldMetadata(
+        description = "User email address",
+        dataType = "STRING",
+        classification = "CONFIDENTIAL",
+        pii = true,
+        piiCategory = "EMAIL",
+        indexStrategy = "UNIQUE",
+        audited = true
+    )
     private String email;
 
-    @Comment("Customer's given (first) name.")
-    @Pii("Part of personal name")
-    @DataClassification(level = DataClassificationLevel.CONFIDENTIAL)
     @Column(nullable = false, length = 60)
+    @FieldMetadata(
+        description = "User first name",
+        dataType = "STRING",
+        classification = "INTERNAL",
+        pii = true,
+        piiCategory = "NAME"
+    )
     private String firstName;
 
-    @Comment("Customer's family (last) name.")
-    @Pii("Part of personal name")
-    @DataClassification(level = DataClassificationLevel.CONFIDENTIAL)
     @Column(nullable = false, length = 60)
+    @FieldMetadata(
+        description = "User last name",
+        dataType = "STRING",
+        classification = "INTERNAL",
+        pii = true,
+        piiCategory = "NAME"
+    )
     private String lastName;
 
-    @Comment("Bcrypt-hashed user password. Never store or log the plain-text value.")
-    @Encrypted(algorithm = EncryptionType.BCRYPT)
-    @DataClassification(level = DataClassificationLevel.RESTRICTED)
-    @AccessLevel(level = AccessLevelValue.ADMIN_ONLY)
     @Column(nullable = false)
+    @FieldMetadata(
+        description = "Hashed password for authentication",
+        dataType = "STRING",
+        classification = "RESTRICTED",
+        encryption = "BCRYPT",
+        accessLevel = "ADMIN_ONLY"
+    )
     private String passwordHash;
 
-    @Comment("Whether the account is enabled. False = soft-deleted or suspended.")
     @Column(nullable = false)
+    @FieldMetadata(
+        description = "Account active status",
+        dataType = "BOOLEAN"
+    )
     private boolean active = true;
 
-    @Comment("Timestamp when the account was created. Immutable after insert.")
     @Column(nullable = false, updatable = false)
+    @FieldMetadata(
+        description = "Account creation timestamp",
+        dataType = "TIMESTAMP",
+        audited = true
+    )
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Address address;
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @FieldMetadata(
+        description = "User profile (one-to-one relationship)",
+        dataType = "OBJECT"
+    )
+    private Profile profile;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Order> orders;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @FieldMetadata(
+        description = "Posts created by this user (one-to-many relationship)",
+        dataType = "COLLECTION"
+    )
+    private Set<Post> posts = new HashSet<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Review> reviews;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @FieldMetadata(
+        description = "Comments created by this user (one-to-many relationship)",
+        dataType = "COLLECTION"
+    )
+    private Set<Comment> comments = new HashSet<>();
+
 
     public User() {}
 
@@ -86,8 +122,10 @@ public class User {
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
     public LocalDateTime getCreatedAt() { return createdAt; }
-    public Address getAddress() { return address; }
-    public void setAddress(Address address) { this.address = address; }
-    public List<Order> getOrders() { return orders; }
-    public List<Review> getReviews() { return reviews; }
+    public Profile getProfile() { return profile; }
+    public void setProfile(Profile profile) { this.profile = profile; }
+    public Set<Post> getPosts() { return posts; }
+    public void setPosts(Set<Post> posts) { this.posts = posts; }
+    public Set<Comment> getComments() { return comments; }
+    public void setComments(Set<Comment> comments) { this.comments = comments; }
 }

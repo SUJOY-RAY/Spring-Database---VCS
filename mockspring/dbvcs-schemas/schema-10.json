@@ -1,12 +1,12 @@
 {
-  "version" : 1,
-  "capturedAt" : "2026-07-06T11:30:10.499197Z",
+  "version" : 10,
+  "capturedAt" : "2026-07-06T12:16:25.595348Z",
   "capturedBy" : "sujoyray <sujoy.mrityunjoy@hyundai-autoever.com>",
   "entities" : [ {
     "className" : "com.spring.mockspring.entity.Comment",
     "simpleClassName" : "Comment",
     "tableName" : "comments",
-    "comment" : "Comment entity for post discussions",
+    "comment" : "Comment entitwjkrehbfcwejhkcbwhijcebkwjhbcjhwebkcjhewbkjchwebhkcjewvchukwehuijkwebcuhkjwbvjhwevhjcewbhkjcewhijkcewbvilhcjkwebckhjwbihy for post discussions",
     "fields" : [ {
       "name" : "id",
       "javaType" : "Long",
@@ -17,6 +17,7 @@
       "metadata" : {
         "description" : "Unique identifier for the comment",
         "dataType" : "BIGINT",
+        "pii" : "true",
         "indexStrategy" : "PRIMARY",
         "comment" : "Primary key"
       }
@@ -64,16 +65,17 @@
       "joinColumnName" : "user_id"
     } ],
     "metadata" : {
-      "description" : "Comment entity for post discussions",
+      "description" : "Comment entitwjkrehbfcwejhkcbwhijcebkwjhbcjhwebkcjhewbkjchwebhkcjewvchukwehuijkwebcuhkjwbvjhwevhjcewbhkjcewhijkcewbvilhcjkwebckhjwbihy for post discussions",
       "domain" : "CONTENT",
-      "type" : "TRANSACTIONAL",
+      "type" : "AGGREGATE",
       "classification" : "INTERNAL",
       "criticality" : "LOW",
       "auditable" : "true",
+      "submodule" : "iuwbv",
       "comment" : "Many-to-one relationship with both User and Post entities: each comment belongs to one user and one post"
     },
     "module" : null,
-    "submodule" : null,
+    "submodule" : "iuwbv",
     "domain" : "CONTENT",
     "criticalityLevel" : "LOW",
     "lifecycleStage" : null,
@@ -383,15 +385,8 @@
       "nullable" : false,
       "id" : false,
       "columnName" : "first_name",
-      "comment" : "User first name",
-      "metadata" : {
-        "description" : "User first name",
-        "dataType" : "STRING",
-        "classification" : "INTERNAL",
-        "pii" : "true",
-        "piiCategory" : "NAME",
-        "comment" : "User profile first name"
-      }
+      "comment" : null,
+      "metadata" : { }
     }, {
       "name" : "lastName",
       "javaType" : "String",

@@ -1,24 +1,18 @@
 package com.dbvcs.annotation;
 
-import java.lang.annotation.*;
-
 /**
- * Declares the strategy used when writing data to this entity.
- *
- * <p>The {@code value} is a free-form string. Allowed values for your project
- * can be configured via {@code dbvcs.allowed-values.update-types} in
- * {@code application.properties} / {@code application.yml}.
- * Default values: APPEND_ONLY, UPSERT, FULL_REFRESH, EVENT_DRIVEN.
- *
- * <pre>
- *   {@literal @}UpdateStrategy("UPSERT")
- *   public class ProductStock { ... }
- * </pre>
+ * Suggested constants for {@code FieldMetadata.updateStrategy()}.
+ * Use these for autocomplete, or pass any custom string directly.
  */
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-public @interface UpdateStrategy {
-    /** The write/update strategy (project-specific string value). */
-    String value();
+public final class UpdateStrategy {
+    private UpdateStrategy() {}
+
+    /** Optimistic locking — conflicts detected at commit time via version/timestamp check. */
+    public static final String OPTIMISTIC  = "OPTIMISTIC";
+    /** Pessimistic locking — row is locked for the duration of the transaction. */
+    public static final String PESSIMISTIC = "PESSIMISTIC";
+    /** Field is immutable after creation; updates are not allowed. */
+    public static final String IMMUTABLE   = "IMMUTABLE";
+    /** Last write wins — no conflict detection. */
+    public static final String LAST_WRITE  = "LAST_WRITE";
 }

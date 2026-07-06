@@ -1,6 +1,7 @@
 package com.dbvcs.scanner;
 
-import com.dbvcs.annotation.*;
+import com.dbvcs.annotation.EntityMetadata;
+import com.dbvcs.annotation.FieldMetadata;
 import com.dbvcs.model.EntitySchema;
 import com.dbvcs.model.FieldSchema;
 import com.dbvcs.model.RelationSchema;
@@ -43,8 +44,8 @@ public class EntityScanner {
 
     private EntitySchema buildEntitySchema(Class<?> clazz) {
         String tableName = resolveTableName(clazz);
-        String comment   = clazz.isAnnotationPresent(Comment.class)
-                ? clazz.getAnnotation(Comment.class).value()
+        String comment   = clazz.isAnnotationPresent(EntityMetadata.class)
+                ? clazz.getAnnotation(EntityMetadata.class).description()
                 : null;
         List<FieldSchema>    fields    = new ArrayList<>();
         List<RelationSchema> relations = new ArrayList<>();
@@ -82,8 +83,8 @@ public class EntityScanner {
         boolean isId      = field.isAnnotationPresent(Id.class);
         boolean nullable  = resolveNullable(field, isId);
         String javaType   = field.getType().getSimpleName();
-        String comment    = field.isAnnotationPresent(Comment.class)
-                ? field.getAnnotation(Comment.class).value()
+        String comment    = field.isAnnotationPresent(FieldMetadata.class)
+                ? field.getAnnotation(FieldMetadata.class).description()
                 : null;
 
         FieldSchema schema = new FieldSchema(field.getName(), javaType, nullable, isId, columnName, comment);
@@ -146,111 +147,80 @@ public class EntityScanner {
     // -------------------------------------------------------------------------
 
     /**
-     * Reads all dbvcs metadata annotations from an entity class and returns them
-     * as a flat key/value map. Values are always Strings (or String arrays become
-     * comma-joined). Absent annotations produce no entry.
+     * Reads all dbvcs metadata from EntityMetadata annotation on an entity class
+     * and returns them as a flat key/value map.
      */
     private Map<String, Object> collectEntityMetadata(Class<?> clazz) {
         Map<String, Object> m = new LinkedHashMap<>();
 
-        ifPresent(clazz, Submodule.class,          a -> {
-            m.put("submodule.name",     a.name());
-            putIfNotEmpty(m, "submodule.description", a.description());
-        });
-        ifPresent(clazz, Domain.class,             a -> {
-            m.put("domain.name",        a.name());
-            putIfNotEmpty(m, "domain.description", a.description());
-        });
-        ifPresent(clazz, Criticality.class,        a -> {
-            m.put("criticality.level",  a.level());
-            putIfNotEmpty(m, "criticality.description", a.description());
-        });
+        if (!clazz.isAnnotationPresent(EntityMetadata.class)) {
+            return m;
+        }
 
-        // Table metadata
-        ifPresent(clazz, TableType.class,          a -> {
-            m.put("tableType.type",     a.type());
-            putIfNotEmpty(m, "tableType.description", a.description());
-        });
+        EntityMetadata desc = clazz.getAnnotation(EntityMetadata.class);
 
-        // Integration
-        ifPresent(clazz, SourceSystem.class,       a -> {
-            m.put("sourceSystem.name",  a.name());
-            putIfNotEmpty(m, "sourceSystem.description", a.description());
-        });
-
-        // Classification
-        ifPresent(clazz, DataClassification.class, a -> {
-            m.put("dataClassification.level", a.level());
-            putIfNotEmpty(m, "dataClassification.description", a.description());
-        });
-        ifPresent(clazz, AccessLevel.class,        a -> m.put("accessLevel.level",  a.level()));
-
-        // Privacy & Compliance
-        ifPresent(clazz, Pii.class,                a -> m.put("pii",                a.value().isEmpty() ? "true" : a.value()));
-        ifPresent(clazz, ConsentRequired.class,    a -> m.put("consentRequired",    a.value().isEmpty() ? "true" : a.value()));
-
-        // Security
-        ifPresent(clazz, Encrypted.class,          a -> m.put("encrypted.algorithm", a.algorithm()));
-
-        // Lifecycle
-        ifPresent(clazz, DataRetention.class, a -> {
-            m.put("retention.type",     a.type());
-            putIfNotEmpty(m, "retention.description", a.description());
-        });
-
-        // Operations
-        ifPresent(clazz, RefreshFrequency.class,   a -> m.put("refreshFrequency",   a.value()));
-        ifPresent(clazz, UpdateStrategy.class,     a -> m.put("updateStrategy",     a.value()));
-        ifPresent(clazz, Versioned.class,          a -> m.put("versioned",          "true"));
-        ifPresent(clazz, Auditable.class,          a -> m.put("auditable",          "true"));
-        ifPresent(clazz, AuditColumns.class,       a -> {
-            m.put("auditColumns.createdBy", a.createdBy());
-            m.put("auditColumns.updatedBy", a.updatedBy());
-            m.put("auditColumns.createdAt", a.createdAt());
-            m.put("auditColumns.updatedAt", a.updatedAt());
-        });
-
-        // API
-        ifPresent(clazz, ApiExposed.class,         a -> m.put("apiExposed",         "true"));
-        ifPresent(clazz, PublicApi.class,          a -> m.put("publicApi",          "true"));
+        // Core metadata
+        putIfNotEmpty(m, "description", desc.description());
+        putIfNotEmpty(m, "domain", desc.domain());
+        putIfNotEmpty(m, "type", desc.type());
+        putIfNotEmpty(m, "classification", desc.classification());
+        putIfNotEmpty(m, "refreshFrequency", desc.refreshFrequency());
+        putIfNotEmpty(m, "sourceSystem", desc.sourceSystem());
+        putIfNotEmpty(m, "criticality", desc.criticality());
+        putIfNotEmpty(m, "retention", desc.retention());
+        
+        // Boolean flags
+        if (desc.auditable()) m.put("auditable", "true");
+        if (desc.versioned()) m.put("versioned", "true");
+        if (desc.publicApi()) m.put("publicApi", "true");
+        
+        putIfNotEmpty(m, "submodule", desc.submodule());
+        putIfNotEmpty(m, "integration", desc.integration());
+        putIfNotEmpty(m, "accessLevel", desc.accessLevel());
+        if (desc.consentRequired()) m.put("consentRequired", "true");
 
         return m;
     }
 
     /**
-     * Reads all dbvcs metadata annotations from a field and returns them
-     * as a flat key/value map.
+     * Reads all dbvcs metadata from FieldMetadata annotation on a field
+     * and returns them as a flat key/value map.
      */
     private Map<String, Object> collectFieldMetadata(Field field) {
         Map<String, Object> m = new LinkedHashMap<>();
 
-        // Integration
-        ifFieldPresent(field, SourceSystem.class,       a -> {
-            m.put("sourceSystem.name",  a.name());
-            putIfNotEmpty(m, "sourceSystem.description", a.description());
-        });
+        if (!field.isAnnotationPresent(FieldMetadata.class)) {
+            return m;
+        }
 
-        // Classification
-        ifFieldPresent(field, DataClassification.class, a -> {
-            m.put("dataClassification.level", a.level());
-            putIfNotEmpty(m, "dataClassification.description", a.description());
-        });
-        ifFieldPresent(field, AccessLevel.class,        a -> m.put("accessLevel.level",  a.level()));
+        FieldMetadata desc = field.getAnnotation(FieldMetadata.class);
 
-        // Privacy & Compliance
-        ifFieldPresent(field, Pii.class,                a -> m.put("pii",                a.value().isEmpty() ? "true" : a.value()));
-        ifFieldPresent(field, ConsentRequired.class,    a -> m.put("consentRequired",    a.value().isEmpty() ? "true" : a.value()));
+        // Core metadata
+        putIfNotEmpty(m, "description", desc.description());
+        putIfNotEmpty(m, "dataType", desc.dataType());
+        putIfNotEmpty(m, "domain", desc.domain());
+        putIfNotEmpty(m, "classification", desc.classification());
+
+        // PII
+        if (desc.pii()) {
+            m.put("pii", "true");
+            putIfNotEmpty(m, "piiCategory", desc.piiCategory());
+        }
 
         // Security
-        ifFieldPresent(field, Encrypted.class,          a -> m.put("encrypted.algorithm", a.algorithm()));
+        putIfNotEmpty(m, "encryption", desc.encryption());
 
-        // Data Modeling
-        ifFieldPresent(field, Searchable.class,         a -> m.put("searchable",         "true"));
-        ifFieldPresent(field, IndexedFor.class,         a -> m.put("indexedFor.purpose", a.purpose()));
+        // Data modeling
+        putIfNotEmpty(m, "searchable", desc.searchable());
+        putIfNotEmpty(m, "indexStrategy", desc.indexStrategy());
 
-        // API
-        ifFieldPresent(field, ApiExposed.class,         a -> m.put("apiExposed",         "true"));
-        ifFieldPresent(field, PublicApi.class,          a -> m.put("publicApi",          "true"));
+        // Flags
+        if (desc.transactional()) m.put("transactional", "true");
+        if (desc.audited()) m.put("audited", "true");
+
+        putIfNotEmpty(m, "updateStrategy", desc.updateStrategy());
+        putIfNotEmpty(m, "accessLevel", desc.accessLevel());
+        if (desc.consentRequired()) m.put("consentRequired", "true");
 
         return m;
     }
@@ -269,48 +239,29 @@ public class EntityScanner {
      */
     private void populatePromotedFields(EntitySchema schema, Map<String, Object> meta) {
         // Grouping / ownership
-        schema.setModule(strVal(meta, "module.name"));
-        schema.setSubmodule(strVal(meta, "submodule.name"));
-        schema.setDomain(strVal(meta, "domain.name"));
+        schema.setSubmodule(strVal(meta, "submodule"));
+        schema.setDomain(strVal(meta, "domain"));
 
         // Risk / quality
-        schema.setCriticalityLevel(strVal(meta, "criticality.level"));
-        schema.setLifecycleStage(strVal(meta, "lifecycle"));
-        schema.setDataClassification(strVal(meta, "dataClassification.level"));
+        schema.setCriticalityLevel(strVal(meta, "criticality"));
+        schema.setDataClassification(strVal(meta, "classification"));
 
-        // Deprecation flag
-        schema.setDeprecated(meta.containsKey("deprecatedSince.version"));
-
-        // Tags (order: privacy → security → table type → operations → api → status)
+        // Tags (order: privacy → security → operations → api → status)
         List<String> tags = new ArrayList<>();
 
         // Privacy & compliance
-        if (meta.containsKey("pii"))                  tags.add("PII");
-        if (meta.containsKey("spd"))                  tags.add("SPD");
-        if (meta.containsKey("containsChildrenData")) tags.add("Children Data");
-        if (meta.containsKey("consentRequired"))      tags.add("Consent Required");
-        if (meta.containsKey("legalHold"))            tags.add("Legal Hold");
+        if (meta.containsKey("pii")) tags.add("PII");
+        if (meta.containsKey("consentRequired")) tags.add("Consent Required");
 
         // Security
-        if (meta.containsKey("encrypted.algorithm"))  tags.add("Encrypted");
-        if (meta.containsKey("masking.strategy"))     tags.add("Masked");
-
-        // Table type
-        if (meta.containsKey("masterData"))           tags.add("Master Data");
-        if (meta.containsKey("transactionalData"))    tags.add("Transactional");
-        if (meta.containsKey("lookupTable"))          tags.add("Lookup");
-        if (meta.containsKey("referenceData"))        tags.add("Reference Data");
+        if (meta.containsKey("encryption")) tags.add("Encrypted");
 
         // Operations
-        if (meta.containsKey("auditable"))            tags.add("Auditable");
-        if (meta.containsKey("versioned"))            tags.add("Versioned");
+        if (meta.containsKey("auditable")) tags.add("Auditable");
+        if (meta.containsKey("versioned")) tags.add("Versioned");
 
         // API
-        if (meta.containsKey("apiExposed"))           tags.add("API Exposed");
-        if (meta.containsKey("publicApi"))            tags.add("Public API");
-
-        // Status
-        if (meta.containsKey("deprecatedSince.version")) tags.add("Deprecated");
+        if (meta.containsKey("publicApi")) tags.add("Public API");
 
         schema.setTags(tags);
     }
@@ -318,35 +269,6 @@ public class EntityScanner {
     private String strVal(Map<String, Object> meta, String key) {
         Object v = meta.get(key);
         return v != null ? String.valueOf(v) : null;
-    }
-
-    // -------------------------------------------------------------------------
-    // Annotation helpers
-    // -------------------------------------------------------------------------
-
-    @FunctionalInterface
-    private interface AnnotationConsumer<A> {
-        void accept(A annotation);
-    }
-
-    private <A extends java.lang.annotation.Annotation> void ifPresent(
-            Class<?> clazz, Class<A> annType, AnnotationConsumer<A> consumer) {
-        if (clazz.isAnnotationPresent(annType)) {
-            consumer.accept(clazz.getAnnotation(annType));
-        }
-    }
-
-    private <A extends java.lang.annotation.Annotation> void ifFieldPresent(
-            Field field, Class<A> annType, AnnotationConsumer<A> consumer) {
-        if (field.isAnnotationPresent(annType)) {
-            consumer.accept(field.getAnnotation(annType));
-        }
-    }
-
-    private void putIfNotEmpty(Map<String, Object> map, String key, String value) {
-        if (value != null && !value.isEmpty()) {
-            map.put(key, value);
-        }
     }
 
     // -------------------------------------------------------------------------
@@ -423,5 +345,11 @@ public class EntityScanner {
 
     private String toSnakeCase(String name) {
         return name.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+    }
+
+    private void putIfNotEmpty(Map<String, Object> map, String key, String value) {
+        if (value != null && !value.isEmpty()) {
+            map.put(key, value);
+        }
     }
 }

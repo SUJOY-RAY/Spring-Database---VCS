@@ -1,27 +1,20 @@
 package com.dbvcs.annotation;
 
-import java.lang.annotation.*;
-
 /**
- * Declares the data classification / sensitivity level for an entity or field.
- *
- * <p>The {@code level} is a free-form string. Allowed values for your project
- * can be configured via {@code dbvcs.allowed-values.data-classification-levels} in
- * {@code application.properties} / {@code application.yml}.
- * Default values: PUBLIC, INTERNAL, CONFIDENTIAL, RESTRICTED.
- *
- * <pre>
- *   {@literal @}DataClassification(level = "CONFIDENTIAL", description = "Internal business data")
- *   public class Order { ... }
- * </pre>
+ * Suggested constants for {@code classification()} in {@code EntityMetadata} and {@code FieldMetadata}.
+ * Use these for autocomplete, or pass any custom string directly.
  */
-@Target({ElementType.TYPE, ElementType.FIELD})
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-public @interface DataClassification {
-    /** Sensitivity level (project-specific string value). */
-    String level();
+public final class DataClassification {
+    private DataClassification() {}
 
-    /** Human-readable justification or context. */
-    String description() default "";
+    /** Freely accessible to the public. */
+    public static final String PUBLIC       = "PUBLIC";
+    /** Internal use only — not for external exposure. */
+    public static final String INTERNAL     = "INTERNAL";
+    /** Sensitive data requiring controlled access. */
+    public static final String CONFIDENTIAL = "CONFIDENTIAL";
+    /** Highly sensitive data with strict access controls. */
+    public static final String RESTRICTED   = "RESTRICTED";
+    /** Top-secret / regulatory data (e.g. PCI, HIPAA). */
+    public static final String SECRET       = "SECRET";
 }

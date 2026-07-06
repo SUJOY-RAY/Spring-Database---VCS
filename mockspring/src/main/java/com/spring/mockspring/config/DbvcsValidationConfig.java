@@ -1,7 +1,11 @@
 package com.spring.mockspring.config;
 
 import com.dbvcs.annotation.*;
+import com.dbvcs.validation.EntityAttributes;
+import com.dbvcs.validation.FieldAttributes;
 import com.dbvcs.validation.ValidationRuleRegistry;
+import com.spring.mockspring.entity.Comment;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -42,23 +46,43 @@ public class DbvcsValidationConfig {
     public ValidationRuleRegistry dbvcsValidationRules() {
         return ValidationRuleRegistry.create()
                 // Abort startup on violations
-                .failOnViolation()
+                // .failOnViolation()
 
-                // Every entity in the project must have these 5 annotations
-                .forAll(
-                        Domain.class,
-                        DataClassification.class,
-                        Comment.class
-                );
+                // Every entity must have @EntityMetadata
+                .forAll(EntityMetadata.class)
 
-                // Add package-specific rules here as needed:
-                //
-                // .forPackage("com.spring.mockspring.entity.**",
-                //             LawfulBasis.class, DataRetention.class)
-                //
-                // Or entity-specific rules:
-                //
-                // .forEntity(User.class,
-                //            Purpose.class, Criticality.class, Pii.class);
+                // Required @EntityMetadata attributes on every entity
+                .requireEntityAttributes(
+                        EntityAttributes.DESCRIPTION,
+                        EntityAttributes.DOMAIN,
+                        EntityAttributes.TYPE,
+                        EntityAttributes.SUBMODULE
+                )
+
+                // Stricter attribute requirements for a specific entity class
+                // .requireEntityAttributesFor(Comment.class,
+                //         EntityAttributes.CLASSIFICATION,
+                //         EntityAttributes.CRITICALITY
+                // )
+
+                // Or scoped to a package (supports * and ** wildcards)
+                // .requireEntityAttributesFor("com.spring.mockspring.entity.**",
+                //         EntityAttributes.CLASSIFICATION
+                // )
+
+                // Require @FieldMetadata on Comment fields
+                // .forPackage("com.spring.mockspring.entity.Comment", FieldMetadata.class)
+
+                // Required @FieldMetadata attributes on Comment fields specifically
+                .requireFieldAttributesFor(Comment.class,
+                        FieldAttributes.DATA_TYPE,
+                        FieldAttributes.CLASSIFICATION
+                )
+
+                // Or globally across all entities that have @FieldMetadata
+                // .requireFieldAttributes(
+                //         FieldAttributes.DATA_TYPE
+                // )
+                ;
     }
 }

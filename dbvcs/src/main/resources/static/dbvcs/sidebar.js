@@ -5,34 +5,35 @@
 // ── Derive Group / Module / Domain ────────────────────────
 function deriveGroup(entity) {
   const meta = entity.metadata || {};
-  if (meta['module.name'])  return meta['module.name'].toLowerCase();
-  if (meta['domain.name'])  return meta['domain.name'].toLowerCase();
+  if (meta['module'])    return meta['module'].toLowerCase();
+  if (meta['submodule']) return meta['submodule'].toLowerCase();
+  if (meta['domain'])    return meta['domain'].toLowerCase();
   const tbl = entity.tableName || '';
   return tbl.split('_')[0] || 'other';
 }
 
 function deriveSubgroup(entity) {
-  return (entity.metadata || {})['submodule.name'] || '';
+  return (entity.metadata || {})['submodule'] || '';
 }
 
 function deriveDomain(entity) {
-  return (entity.metadata || {})['domain.name'] || 'unassigned';
+  return (entity.metadata || {})['domain'] || 'unassigned';
 }
 
 function deriveCriticality(entity) {
-  return (entity.metadata || {})['criticality.level'] || 'unspecified';
+  return (entity.metadata || {})['criticality'] || 'unspecified';
 }
 
 function deriveTableType(entity) {
-  return (entity.metadata || {})['tableType.value'] || 'standard';
+  return (entity.metadata || {})['type'] || 'standard';
 }
 
 function deriveLifecycle(entity) {
-  return (entity.metadata || {})['lifecycle.stage'] || 'unspecified';
+  return (entity.metadata || {})['lifecycle'] || 'unspecified';
 }
 
 function deriveSourceSystem(entity) {
-  return (entity.metadata || {})['sourceSystem.name'] || 'internal';
+  return (entity.metadata || {})['sourceSystem'] || 'internal';
 }
 
 // Returns the group key for the currently active groupMode
@@ -61,10 +62,10 @@ const GROUP_MODE_ICONS = {
 function deriveGroupLabel(groupName, groupEntities) {
   const ent = (groupEntities || []).find(e => {
     const meta = e.metadata || {};
-    return (meta['module.name'] || '').toLowerCase() === groupName
-        && meta['module.description'];
+    return (meta['module'] || '').toLowerCase() === groupName
+        && meta['comment'];
   });
-  if (ent) return ent.metadata['module.description'];
+  if (ent) return ent.metadata['comment'];
   return groupName.charAt(0).toUpperCase() + groupName.slice(1);
 }
 
@@ -212,22 +213,22 @@ function showFieldTooltip(ev, field) {
     const metaDiv = document.createElement('div');
     metaDiv.className = 'tooltip-meta';
     // Show first 4 most relevant meta entries
-    const priority = ['pii','encrypted.algorithm','masking.strategy','piiCategory.type',
-      'dataClassification.level','accessLevel.level','businessKey','naturalKey',
-      'searchable','lawfulBasis.type','consentRequired','legalHold'];
+    const priority = ['pii','encryption','masking','piiCategory',
+      'classification','accessLevel','businessKey','naturalKey',
+      'searchable','lawfulBasis','consentRequired','legalHold'];
     const shown = [...priority.filter(k => meta[k]), ...metaKeys.filter(k => !priority.includes(k))].slice(0, 5);
     shown.forEach(k => {
       const val = meta[k];
       const chip = document.createElement('span');
       chip.className = 'tooltip-meta-chip';
       const labelMap = {
-        'pii': 'PII', 'encrypted.algorithm': 'Encrypted', 'masking.strategy': 'Masking',
-        'piiCategory.type': 'PII Type', 'dataClassification.level': 'Classification',
-        'accessLevel.level': 'Access', 'businessKey': 'Business Key', 'naturalKey': 'Natural Key',
-        'searchable': 'Searchable', 'lawfulBasis.type': 'Lawful Basis',
+        'pii': 'PII', 'encryption': 'Encrypted', 'masking': 'Masking',
+        'piiCategory': 'PII Type', 'classification': 'Classification',
+        'accessLevel': 'Access', 'businessKey': 'Business Key', 'naturalKey': 'Natural Key',
+        'searchable': 'Searchable', 'lawfulBasis': 'Lawful Basis',
         'consentRequired': 'Consent', 'legalHold': 'Legal Hold',
         'derivedFrom': 'From', 'derived.expression': 'Expr',
-        'indexedFor.purpose': 'Index', 'apiExposed': 'API', 'publicApi': 'Public API',
+        'indexStrategy': 'Index', 'apiExposed': 'API', 'publicApi': 'Public API',
         'dataQualityLevel': 'Quality', 'remarks': 'Note'
       };
       const lbl = labelMap[k] || k.replace(/\./g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');

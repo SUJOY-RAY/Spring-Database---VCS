@@ -1,12 +1,12 @@
 {
-  "version" : 1,
-  "capturedAt" : "2026-07-06T11:30:10.499197Z",
+  "version" : 17,
+  "capturedAt" : "2026-07-06T12:52:16.700593Z",
   "capturedBy" : "sujoyray <sujoy.mrityunjoy@hyundai-autoever.com>",
   "entities" : [ {
     "className" : "com.spring.mockspring.entity.Comment",
     "simpleClassName" : "Comment",
     "tableName" : "comments",
-    "comment" : "Comment entity for post discussions",
+    "comment" : "Comment entitwjkrehbfcwejhkcbwhijcebkwjhbcjhwebkcjhewbkjchwebhkcjewvchukwehuijkwebcuhkjwbvjhwevhjcewbhkjcewhijkcewbvilhcjkwebckhjwbihy for post discussions",
     "fields" : [ {
       "name" : "id",
       "javaType" : "Long",
@@ -17,8 +17,8 @@
       "metadata" : {
         "description" : "Unique identifier for the comment",
         "dataType" : "BIGINT",
-        "indexStrategy" : "PRIMARY",
-        "comment" : "Primary key"
+        "pii" : "true",
+        "indexStrategy" : "PRIMARY"
       }
     }, {
       "name" : "content",
@@ -31,8 +31,7 @@
         "description" : "Comment content",
         "dataType" : "TEXT",
         "classification" : "INTERNAL",
-        "audited" : "true",
-        "comment" : "The text content of the comment"
+        "audited" : "true"
       }
     }, {
       "name" : "createdAt",
@@ -44,8 +43,7 @@
       "metadata" : {
         "description" : "Comment creation timestamp",
         "dataType" : "TIMESTAMP",
-        "audited" : "true",
-        "comment" : "When the comment was posted"
+        "audited" : "true"
       }
     } ],
     "relations" : [ {
@@ -64,16 +62,17 @@
       "joinColumnName" : "user_id"
     } ],
     "metadata" : {
-      "description" : "Comment entity for post discussions",
+      "description" : "Comment entitwjkrehbfcwejhkcbwhijcebkwjhbcjhwebkcjhewbkjchwebhkcjewvchukwehuijkwebcuhkjwbvjhwevhjcewbhkjcewhijkcewbvilhcjkwebckhjwbihy for post discussions",
       "domain" : "CONTENT",
-      "type" : "TRANSACTIONAL",
+      "type" : "AGGREGATE",
       "classification" : "INTERNAL",
       "criticality" : "LOW",
+      "retention" : "PERMANENT",
       "auditable" : "true",
-      "comment" : "Many-to-one relationship with both User and Post entities: each comment belongs to one user and one post"
+      "submodule" : "iuwbv"
     },
     "module" : null,
-    "submodule" : null,
+    "submodule" : "iuwbv",
     "domain" : "CONTENT",
     "criticalityLevel" : "LOW",
     "lifecycleStage" : null,
@@ -95,8 +94,7 @@
       "metadata" : {
         "description" : "Unique identifier for the post",
         "dataType" : "BIGINT",
-        "indexStrategy" : "PRIMARY",
-        "comment" : "Primary key"
+        "indexStrategy" : "PRIMARY"
       }
     }, {
       "name" : "title",
@@ -109,8 +107,7 @@
         "description" : "Post title",
         "dataType" : "STRING",
         "classification" : "INTERNAL",
-        "audited" : "true",
-        "comment" : "The title of the blog post"
+        "audited" : "true"
       }
     }, {
       "name" : "content",
@@ -123,8 +120,7 @@
         "description" : "Post content",
         "dataType" : "TEXT",
         "classification" : "INTERNAL",
-        "audited" : "true",
-        "comment" : "The main content body of the post"
+        "audited" : "true"
       }
     }, {
       "name" : "createdAt",
@@ -136,8 +132,7 @@
       "metadata" : {
         "description" : "Post creation timestamp",
         "dataType" : "TIMESTAMP",
-        "audited" : "true",
-        "comment" : "When the post was published"
+        "audited" : "true"
       }
     }, {
       "name" : "updatedAt",
@@ -149,8 +144,7 @@
       "metadata" : {
         "description" : "Post last modified timestamp",
         "dataType" : "TIMESTAMP",
-        "audited" : "true",
-        "comment" : "When the post was last updated"
+        "audited" : "true"
       }
     } ],
     "relations" : [ {
@@ -175,10 +169,10 @@
       "classification" : "INTERNAL",
       "criticality" : "MEDIUM",
       "auditable" : "true",
-      "comment" : "Many-to-one relationship with User entity: each post belongs to one user, one user can create many posts"
+      "submodule" : "kjbd"
     },
     "module" : null,
-    "submodule" : null,
+    "submodule" : "kjbd",
     "domain" : "CONTENT",
     "criticalityLevel" : "MEDIUM",
     "lifecycleStage" : null,
@@ -200,8 +194,7 @@
       "metadata" : {
         "description" : "Unique identifier for the profile",
         "dataType" : "BIGINT",
-        "indexStrategy" : "PRIMARY",
-        "comment" : "Primary key"
+        "indexStrategy" : "PRIMARY"
       }
     }, {
       "name" : "bio",
@@ -213,8 +206,7 @@
       "metadata" : {
         "description" : "User biography or about section",
         "dataType" : "STRING",
-        "classification" : "INTERNAL",
-        "comment" : "Optional biographical information"
+        "classification" : "INTERNAL"
       }
     }, {
       "name" : "phone",
@@ -228,8 +220,7 @@
         "dataType" : "STRING",
         "classification" : "CONFIDENTIAL",
         "pii" : "true",
-        "piiCategory" : "PHONE",
-        "comment" : "Contact phone number"
+        "piiCategory" : "PHONE"
       }
     }, {
       "name" : "createdAt",
@@ -241,8 +232,7 @@
       "metadata" : {
         "description" : "Profile creation timestamp",
         "dataType" : "TIMESTAMP",
-        "audited" : "true",
-        "comment" : "When the profile was created"
+        "audited" : "true"
       }
     } ],
     "relations" : [ {
@@ -260,11 +250,11 @@
       "classification" : "INTERNAL",
       "criticality" : "MEDIUM",
       "auditable" : "true",
-      "comment" : "One-to-one relationship with User entity containing extended profile details",
+      "submodule" : "wdoiucn",
       "accessLevel" : "domain"
     },
     "module" : null,
-    "submodule" : null,
+    "submodule" : "wdoiucn",
     "domain" : "IDENTITY",
     "criticalityLevel" : "MEDIUM",
     "lifecycleStage" : null,
@@ -286,8 +276,7 @@
       "metadata" : {
         "description" : "Unique identifier for the tag",
         "dataType" : "BIGINT",
-        "indexStrategy" : "PRIMARY",
-        "comment" : "Primary key"
+        "indexStrategy" : "PRIMARY"
       }
     }, {
       "name" : "name",
@@ -300,8 +289,7 @@
         "description" : "Tag name",
         "dataType" : "STRING",
         "indexStrategy" : "UNIQUE",
-        "audited" : "true",
-        "comment" : "Unique tag name for categorization"
+        "audited" : "true"
       }
     }, {
       "name" : "description",
@@ -313,8 +301,7 @@
       "metadata" : {
         "description" : "Tag description",
         "dataType" : "STRING",
-        "classification" : "INTERNAL",
-        "comment" : "Optional description of the tag"
+        "classification" : "INTERNAL"
       }
     } ],
     "relations" : [ {
@@ -332,10 +319,10 @@
       "classification" : "INTERNAL",
       "criticality" : "LOW",
       "auditable" : "true",
-      "comment" : "Many-to-many relationship with Post entity: tags can be applied to multiple posts, posts can have multiple tags"
+      "submodule" : " kjbdc"
     },
     "module" : null,
-    "submodule" : null,
+    "submodule" : " kjbdc",
     "domain" : "CONTENT",
     "criticalityLevel" : "LOW",
     "lifecycleStage" : null,
@@ -346,7 +333,7 @@
     "className" : "com.spring.mockspring.entity.User",
     "simpleClassName" : "User",
     "tableName" : "users",
-    "comment" : "User account entity for authentication and authorization",
+    "comment" : "User account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorization",
     "fields" : [ {
       "name" : "id",
       "javaType" : "Long",
@@ -357,8 +344,7 @@
       "metadata" : {
         "description" : "Unique identifier for the user",
         "dataType" : "BIGINT",
-        "indexStrategy" : "PRIMARY",
-        "comment" : "Primary key"
+        "indexStrategy" : "PRIMARY"
       }
     }, {
       "name" : "email",
@@ -374,8 +360,7 @@
         "pii" : "true",
         "piiCategory" : "EMAIL",
         "indexStrategy" : "UNIQUE",
-        "audited" : "true",
-        "comment" : "Email is used for login and communication"
+        "audited" : "true"
       }
     }, {
       "name" : "firstName",
@@ -389,8 +374,7 @@
         "dataType" : "STRING",
         "classification" : "INTERNAL",
         "pii" : "true",
-        "piiCategory" : "NAME",
-        "comment" : "User profile first name"
+        "piiCategory" : "NAME"
       }
     }, {
       "name" : "lastName",
@@ -404,8 +388,7 @@
         "dataType" : "STRING",
         "classification" : "INTERNAL",
         "pii" : "true",
-        "piiCategory" : "NAME",
-        "comment" : "User profile last name"
+        "piiCategory" : "NAME"
       }
     }, {
       "name" : "passwordHash",
@@ -419,7 +402,6 @@
         "dataType" : "STRING",
         "classification" : "RESTRICTED",
         "encryption" : "BCRYPT",
-        "comment" : "Never stored in plaintext, always hashed",
         "accessLevel" : "ADMIN_ONLY"
       }
     }, {
@@ -431,8 +413,7 @@
       "comment" : "Account active status",
       "metadata" : {
         "description" : "Account active status",
-        "dataType" : "BOOLEAN",
-        "comment" : "Determines if user can authenticate"
+        "dataType" : "BOOLEAN"
       }
     }, {
       "name" : "createdAt",
@@ -444,8 +425,7 @@
       "metadata" : {
         "description" : "Account creation timestamp",
         "dataType" : "TIMESTAMP",
-        "audited" : "true",
-        "comment" : "Immutable record of when the user account was created"
+        "audited" : "true"
       }
     } ],
     "relations" : [ {
@@ -471,16 +451,16 @@
       "joinColumnName" : null
     } ],
     "metadata" : {
-      "description" : "User account entity for authentication and authorization",
+      "description" : "User account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorizationUser account entity for authentication and authorization",
       "domain" : "IDENTITY",
       "type" : "MASTER",
       "classification" : "CONFIDENTIAL",
       "criticality" : "HIGH",
       "auditable" : "true",
-      "comment" : "Core user management entity containing authentication credentials and profile information"
+      "submodule" : "lwein"
     },
     "module" : null,
-    "submodule" : null,
+    "submodule" : "lwein",
     "domain" : "IDENTITY",
     "criticalityLevel" : "HIGH",
     "lifecycleStage" : null,

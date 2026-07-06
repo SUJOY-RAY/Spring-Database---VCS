@@ -1,6 +1,6 @@
 {
-  "version" : 1,
-  "capturedAt" : "2026-07-06T11:30:10.499197Z",
+  "version" : 6,
+  "capturedAt" : "2026-07-06T11:59:03.115444Z",
   "capturedBy" : "sujoyray <sujoy.mrityunjoy@hyundai-autoever.com>",
   "entities" : [ {
     "className" : "com.spring.mockspring.entity.Comment",
@@ -66,7 +66,7 @@
     "metadata" : {
       "description" : "Comment entity for post discussions",
       "domain" : "CONTENT",
-      "type" : "TRANSACTIONAL",
+      "type" : "AGGREGATE",
       "classification" : "INTERNAL",
       "criticality" : "LOW",
       "auditable" : "true",
@@ -204,11 +204,11 @@
         "comment" : "Primary key"
       }
     }, {
-      "name" : "bio",
+      "name" : "bio22",
       "javaType" : "String",
       "nullable" : true,
       "id" : false,
-      "columnName" : "bio",
+      "columnName" : "bio22",
       "comment" : "User biography or about section",
       "metadata" : {
         "description" : "User biography or about section",
@@ -216,6 +216,46 @@
         "classification" : "INTERNAL",
         "comment" : "Optional biographical information"
       }
+    }, {
+      "name" : "bio",
+      "javaType" : "String",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "bio",
+      "comment" : null,
+      "metadata" : { }
+    }, {
+      "name" : "bio1",
+      "javaType" : "String",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "bio1",
+      "comment" : null,
+      "metadata" : { }
+    }, {
+      "name" : "bio2",
+      "javaType" : "String",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "bio2",
+      "comment" : null,
+      "metadata" : { }
+    }, {
+      "name" : "bio3",
+      "javaType" : "String",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "bio3",
+      "comment" : null,
+      "metadata" : { }
+    }, {
+      "name" : "bio4",
+      "javaType" : "String",
+      "nullable" : true,
+      "id" : false,
+      "columnName" : "bio4",
+      "comment" : null,
+      "metadata" : { }
     }, {
       "name" : "phone",
       "javaType" : "String",
@@ -383,15 +423,8 @@
       "nullable" : false,
       "id" : false,
       "columnName" : "first_name",
-      "comment" : "User first name",
-      "metadata" : {
-        "description" : "User first name",
-        "dataType" : "STRING",
-        "classification" : "INTERNAL",
-        "pii" : "true",
-        "piiCategory" : "NAME",
-        "comment" : "User profile first name"
-      }
+      "comment" : null,
+      "metadata" : { }
     }, {
       "name" : "lastName",
       "javaType" : "String",
