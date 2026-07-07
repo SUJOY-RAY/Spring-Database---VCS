@@ -1,9 +1,9 @@
 package com.spring.mockspring.config;
 
-import com.dbvcs.annotation.*;
-import com.dbvcs.validation.EntityAttributes;
-import com.dbvcs.validation.FieldAttributes;
-import com.dbvcs.validation.ValidationRuleRegistry;
+import com.dbdocs.annotation.*;
+import com.dbdocs.validation.EntityAttributes;
+import com.dbdocs.validation.FieldAttributes;
+import com.dbdocs.validation.ValidationRuleRegistry;
 import com.spring.mockspring.entity.Comment;
 
 import org.springframework.context.annotation.Bean;

@@ -68,12 +68,6 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
-			<groupId>com.dbvcs</groupId>
-			<artifactId>dbvcs</artifactId>
-			<version>1.0.0</version>
-			<scope>compile</scope>
-		</dependency>
 
 
 		<dependency>
@@ -89,6 +83,12 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.dbdocs</groupId>
+			<artifactId>dbdocs</artifactId>
+			<version>1.0.0</version>
+			<scope>compile</scope>
 		</dependency>
 	</dependencies>
 

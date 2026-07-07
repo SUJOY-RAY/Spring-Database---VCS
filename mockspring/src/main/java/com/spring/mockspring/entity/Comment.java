@@ -1,9 +1,6 @@
 package com.spring.mockspring.entity;
 
-import com.dbvcs.annotation.DataRetentionPolicy;
-import com.dbvcs.annotation.EntityMetadata;
-import com.dbvcs.annotation.EntityType;
-import com.dbvcs.annotation.FieldMetadata;
+import com.dbdocs.annotation.*;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -12,7 +9,7 @@ import java.time.LocalDateTime;
 @Table(name = "comments")
 @EntityMetadata(
     description = "Comment entitwjkrehbfcwejhkcbwhijcebkwjhbcjhwebkcjhewbkjchwebhkcjewvchukwehuijkwebcuhkjwbvjhwevhjcewbhkjcewhijkcewbvilhcjkwebckhjwbihy for post discussions",
-    domain = "CONTENT",
+    domain = "CUSTOMER",
     submodule = "iuwbv",
     type = EntityType.AGGREGATE,
     classification = "INTERNAL",
@@ -28,8 +25,8 @@ public class Comment {
         description = "Unique identifier for the comment",
         dataType = "BIGINT",
         indexStrategy = "PRIMARY",
-        pii = true
-    
+        pii = true,
+        classification = DataClassification.CONFIDENTIAL
     )
     private Long id;
 

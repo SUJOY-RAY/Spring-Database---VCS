@@ -1,0 +1,152 @@
+{
+  "groups": [
+    {
+      "name": "dbdocs",
+      "type": "com.dbdocs.autoconfigure.DbvcsProperties",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties"
+    },
+    {
+      "name": "dbdocs.validation",
+      "type": "com.dbdocs.autoconfigure.DbvcsProperties$Validation",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties",
+      "sourceMethod": "getValidation()"
+    },
+    {
+      "name": "dbdocs.validation.entity",
+      "type": "com.dbdocs.autoconfigure.DbvcsProperties$EntityAttributeValidation",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$Validation",
+      "sourceMethod": "getEntity()"
+    },
+    {
+      "name": "dbdocs.validation.field",
+      "type": "com.dbdocs.autoconfigure.DbvcsProperties$FieldAttributeValidation",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$Validation",
+      "sourceMethod": "getField()"
+    },
+    {
+      "name": "dbdocs.scanning",
+      "type": "com.dbdocs.autoconfigure.DbvcsProperties$Scanning",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties",
+      "sourceMethod": "getScanning()"
+    },
+    {
+      "name": "dbdocs.ui",
+      "type": "com.dbdocs.autoconfigure.DbvcsProperties$Ui",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties",
+      "sourceMethod": "getUi()"
+    },
+    {
+      "name": "dbdocs.versioning",
+      "type": "com.dbdocs.autoconfigure.DbvcsProperties$Versioning",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties",
+      "sourceMethod": "getVersioning()"
+    },
+    {
+      "name": "dbdocs.changelog",
+      "type": "com.dbdocs.autoconfigure.DbvcsProperties$Changelog",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties",
+      "sourceMethod": "getChangelog()"
+    }
+  ],
+  "properties": [
+    {
+      "name": "dbdocs.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable or disable dbdocs completely.",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "dbdocs.validation.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable entity annotation validation on startup.",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$Validation",
+      "defaultValue": true
+    },
+    {
+      "name": "dbdocs.validation.fail-on-violation",
+      "type": "java.lang.Boolean",
+      "description": "Abort application startup if annotation validation violations are found.",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$Validation",
+      "defaultValue": false
+    },
+    {
+      "name": "dbdocs.validation.entity.required-attributes",
+      "type": "java.lang.String",
+      "description": "Comma-separated list of @EntityMetadata attribute names that must be non-empty (e.g. domain,classification,criticality).",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$EntityAttributeValidation",
+      "defaultValue": ""
+    },
+    {
+      "name": "dbdocs.validation.entity.optional-attributes",
+      "type": "java.lang.String",
+      "description": "Comma-separated list of @EntityMetadata attribute names explicitly treated as optional. Informational only.",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$EntityAttributeValidation",
+      "defaultValue": ""
+    },
+    {
+      "name": "dbdocs.validation.field.required-attributes",
+      "type": "java.lang.String",
+      "description": "Comma-separated list of @FieldMetadata attribute names that must be non-empty (e.g. dataType,classification).",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$FieldAttributeValidation",
+      "defaultValue": ""
+    },
+    {
+      "name": "dbdocs.validation.field.optional-attributes",
+      "type": "java.lang.String",
+      "description": "Comma-separated list of @FieldMetadata attribute names explicitly treated as optional. Informational only.",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$FieldAttributeValidation",
+      "defaultValue": ""
+    },
+    {
+      "name": "dbdocs.scanning.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable classpath scanning for @Entity classes.",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$Scanning",
+      "defaultValue": true
+    },
+    {
+      "name": "dbdocs.scanning.packages",
+      "type": "java.lang.String",
+      "description": "Comma-separated list of packages to scan for @Entity classes. Scans the entire classpath if empty.",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$Scanning",
+      "defaultValue": ""
+    },
+    {
+      "name": "dbdocs.ui.path",
+      "type": "java.lang.String",
+      "description": "URL path prefix for the dbdocs UI.",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$Ui",
+      "defaultValue": "/dbdocs"
+    },
+    {
+      "name": "dbdocs.versioning.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable file-based schema versioning.",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$Versioning",
+      "defaultValue": false
+    },
+    {
+      "name": "dbdocs.versioning.storage-dir",
+      "type": "java.lang.String",
+      "description": "Directory for persisting schema version snapshots.",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$Versioning",
+      "defaultValue": "./dbdocs-versions"
+    },
+    {
+      "name": "dbdocs.versioning.max-versions",
+      "type": "java.lang.Integer",
+      "description": "Maximum number of schema versions to keep on disk. Oldest are deleted automatically after each save. 0 means unlimited.",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$Versioning",
+      "defaultValue": 0
+    },
+    {
+      "name": "dbdocs.changelog.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable changelog tracking.",
+      "sourceType": "com.dbdocs.autoconfigure.DbvcsProperties$Changelog",
+      "defaultValue": true
+    }
+  ],
+  "hints": []
+}

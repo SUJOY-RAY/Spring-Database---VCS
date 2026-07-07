@@ -1,7 +1,6 @@
 package com.spring.mockspring.entity;
 
-import com.dbvcs.annotation.EntityMetadata;
-import com.dbvcs.annotation.FieldMetadata;
+import com.dbdocs.annotation.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
